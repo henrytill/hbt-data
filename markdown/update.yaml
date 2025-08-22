@@ -14,6 +14,6 @@ value:
     - Bar
     - Foo
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []

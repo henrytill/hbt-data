@@ -10,7 +10,7 @@ value:
     - Quux
     labels: []
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges:
   - 0
@@ -23,7 +23,7 @@ value:
     - Baz
     labels: []
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges:
   - 0
@@ -36,7 +36,7 @@ value:
     - Bar
     labels: []
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges:
   - 0
@@ -49,7 +49,7 @@ value:
     - Foo
     labels: []
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges:
   - 1

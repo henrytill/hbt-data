@@ -9,6 +9,6 @@ value:
     names: []
     labels: []
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []

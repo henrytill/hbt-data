@@ -10,6 +10,6 @@ value:
     - Foo
     labels: []
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []

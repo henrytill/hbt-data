@@ -12,7 +12,7 @@ value:
     - feed
     - private
     shared: false
-    toread: false
+    toRead: false
     isFeed: true
     extended: Private feed bookmark
   edges: []
@@ -27,7 +27,7 @@ value:
     - feed
     - public
     shared: true
-    toread: false
+    toRead: false
     isFeed: true
     extended: Public feed bookmark
   edges: []
@@ -42,7 +42,7 @@ value:
     - project
     - secret
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
     extended: Private bookmark with last visit time
     lastVisitedAt: 1609804800
@@ -57,7 +57,7 @@ value:
     labels:
     - programming
     shared: true
-    toread: false
+    toRead: false
     isFeed: false
     extended: This bookmark has no privacy flag (defaults to public)
   edges: []
@@ -72,7 +72,7 @@ value:
     - internal
     - work
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
     extended: This bookmark is private (PRIVATE="1")
   edges: []
@@ -87,7 +87,7 @@ value:
     - example
     - public
     shared: true
-    toread: false
+    toRead: false
     isFeed: false
     extended: This bookmark is public (PRIVATE="0")
   edges: []

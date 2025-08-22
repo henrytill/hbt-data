@@ -13,7 +13,7 @@ value:
     - profiling
     - tools
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
     extended: ""
   edges: []
@@ -29,7 +29,7 @@ value:
     - profiling
     - tools
     shared: false
-    toread: true
+    toRead: true
     isFeed: false
     extended: ""
   edges: []
@@ -46,7 +46,7 @@ value:
     - profiling
     - tools
     shared: true
-    toread: false
+    toRead: false
     isFeed: false
     extended: tragically intel-only
   edges: []

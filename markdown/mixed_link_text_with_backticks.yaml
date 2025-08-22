@@ -10,6 +10,6 @@ value:
     - Hello `Foo`, world!
     labels: []
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []

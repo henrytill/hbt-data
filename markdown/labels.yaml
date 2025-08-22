@@ -11,7 +11,7 @@ value:
     labels:
     - Baz
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []
 - id: 2
@@ -24,7 +24,7 @@ value:
     labels:
     - Baz
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []
 - id: 1
@@ -37,7 +37,7 @@ value:
     labels:
     - Foo
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []
 - id: 0
@@ -50,6 +50,6 @@ value:
     labels:
     - Foo
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []

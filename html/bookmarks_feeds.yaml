@@ -13,7 +13,7 @@ value:
     - news
     - tech
     shared: true
-    toread: false
+    toRead: false
     isFeed: false
     lastVisitedAt: 1610064000
   edges: []
@@ -29,7 +29,7 @@ value:
     - git
     - programming
     shared: true
-    toread: false
+    toRead: false
     isFeed: false
   edges: []
 - id: 3
@@ -44,7 +44,7 @@ value:
     - rust
     - weekly
     shared: true
-    toread: false
+    toRead: false
     isFeed: true
   edges: []
 - id: 2
@@ -59,7 +59,7 @@ value:
     - functional
     - ocaml
     shared: true
-    toread: false
+    toRead: false
     isFeed: true
     extended: OCaml community blog aggregator
   edges: []
@@ -75,7 +75,7 @@ value:
     - books
     - tech
     shared: true
-    toread: false
+    toRead: false
     isFeed: true
     extended: Technology insights and trends
   edges: []
@@ -89,6 +89,6 @@ value:
     labels:
     - example
     shared: true
-    toread: false
+    toRead: false
     isFeed: false
   edges: []

@@ -13,7 +13,7 @@ value:
     - profiling
     - tools
     shared: false
-    toread: true
+    toRead: true
     isFeed: false
   edges: []
 - id: 1
@@ -26,7 +26,7 @@ value:
     labels:
     - windows-dev
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
     extended: Monitor file system, Registry, process, thread and DLL activity in real-time.
   edges: []
@@ -41,6 +41,6 @@ value:
     - c
     - c++
     shared: true
-    toread: false
+    toRead: false
     isFeed: false
   edges: []

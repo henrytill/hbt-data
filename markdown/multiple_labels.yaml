@@ -13,7 +13,7 @@ value:
     - Baz
     - Foo
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []
 - id: 1
@@ -27,7 +27,7 @@ value:
     - Bar
     - Foo
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []
 - id: 0
@@ -40,6 +40,6 @@ value:
     labels:
     - Foo
     shared: false
-    toread: false
+    toRead: false
     isFeed: false
   edges: []
