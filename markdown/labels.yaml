@@ -1,0 +1,55 @@
+version: 0.1.0
+length: 4
+value:
+- id: 3
+  entity:
+    uri: https://quux.com/
+    createdAt: 1700006400
+    updatedAt: []
+    names:
+    - Quux
+    labels:
+    - Baz
+    shared: false
+    toread: false
+    isFeed: false
+  edges: []
+- id: 2
+  entity:
+    uri: https://baz.com/
+    createdAt: 1700006400
+    updatedAt: []
+    names:
+    - Baz
+    labels:
+    - Baz
+    shared: false
+    toread: false
+    isFeed: false
+  edges: []
+- id: 1
+  entity:
+    uri: https://bar.com/
+    createdAt: 1700006400
+    updatedAt: []
+    names:
+    - Bar
+    labels:
+    - Foo
+    shared: false
+    toread: false
+    isFeed: false
+  edges: []
+- id: 0
+  entity:
+    uri: https://foo.com/
+    createdAt: 1700006400
+    updatedAt: []
+    names:
+    - Foo
+    labels:
+    - Foo
+    shared: false
+    toread: false
+    isFeed: false
+  edges: []

@@ -1,0 +1,15 @@
+version: 0.1.0
+length: 1
+value:
+- id: 0
+  entity:
+    uri: https://foo.com/
+    createdAt: 1700006400
+    updatedAt: []
+    names:
+    - Foo
+    labels: []
+    shared: false
+    toread: false
+    isFeed: false
+  edges: []
