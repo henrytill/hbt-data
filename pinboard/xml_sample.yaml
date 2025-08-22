@@ -1,0 +1,52 @@
+version: 0.1.0
+length: 3
+value:
+- id: 2
+  entity:
+    uri: https://github.com/janestreet/magic-trace
+    createdAt: 1650673776
+    updatedAt: []
+    names:
+    - 'janestreet/magic-trace: magic-trace collects and displays high-resolution traces
+      of what a process is doing'
+    labels:
+    - performance
+    - profiling
+    - tools
+    shared: true
+    toread: false
+    isFeed: false
+    extended: tragically intel-only
+  edges: []
+- id: 1
+  entity:
+    uri: https://www.intel.com/content/www/us/en/developer/tools/oneapi/vtune-profiler.html#gs.x8oazh
+    createdAt: 1649855530
+    updatedAt: []
+    names:
+    - "Fix Performance Bottlenecks with Intel\xAE VTune\u2122 Profiler"
+    labels:
+    - performance
+    - profiling
+    - tools
+    shared: false
+    toread: true
+    isFeed: false
+    extended: ""
+  edges: []
+- id: 0
+  entity:
+    uri: http://kcachegrind.sourceforge.net/html/Home.html
+    createdAt: 1649836892
+    updatedAt: []
+    names:
+    - ""
+    labels:
+    - performance
+    - profiling
+    - tools
+    shared: false
+    toread: false
+    isFeed: false
+    extended: ""
+  edges: []
