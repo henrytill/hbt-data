@@ -1,61 +1,6 @@
 version: 0.1.0
 length: 5
 value:
-- id: 4
-  entity:
-    uri: https://baz.com/
-    createdAt: 1700179200
-    updatedAt: []
-    names: []
-    labels:
-    - Foo
-    shared: false
-    toRead: false
-    isFeed: false
-  edges:
-  - 0
-- id: 3
-  entity:
-    uri: https://quux.com/
-    createdAt: 1700179200
-    updatedAt: []
-    names:
-    - Quux
-    labels:
-    - Foo
-    shared: false
-    toRead: false
-    isFeed: false
-  edges:
-  - 2
-- id: 2
-  entity:
-    uri: https://example.com/
-    createdAt: 1700179200
-    updatedAt: []
-    names:
-    - Hello, world!
-    labels:
-    - Foo
-    shared: false
-    toRead: false
-    isFeed: false
-  edges:
-  - 0
-  - 3
-- id: 1
-  entity:
-    uri: https://bar.com/
-    createdAt: 1700179200
-    updatedAt: []
-    names: []
-    labels:
-    - Foo
-    shared: false
-    toRead: false
-    isFeed: false
-  edges:
-  - 0
 - id: 0
   entity:
     uri: https://foo.com/
@@ -72,3 +17,58 @@ value:
   - 1
   - 2
   - 4
+- id: 1
+  entity:
+    uri: https://bar.com/
+    createdAt: 1700179200
+    updatedAt: []
+    names: []
+    labels:
+    - Foo
+    shared: false
+    toRead: false
+    isFeed: false
+  edges:
+  - 0
+- id: 2
+  entity:
+    uri: https://example.com/
+    createdAt: 1700179200
+    updatedAt: []
+    names:
+    - Hello, world!
+    labels:
+    - Foo
+    shared: false
+    toRead: false
+    isFeed: false
+  edges:
+  - 0
+  - 3
+- id: 3
+  entity:
+    uri: https://quux.com/
+    createdAt: 1700179200
+    updatedAt: []
+    names:
+    - Quux
+    labels:
+    - Foo
+    shared: false
+    toRead: false
+    isFeed: false
+  edges:
+  - 2
+- id: 4
+  entity:
+    uri: https://baz.com/
+    createdAt: 1700179200
+    updatedAt: []
+    names: []
+    labels:
+    - Foo
+    shared: false
+    toRead: false
+    isFeed: false
+  edges:
+  - 0

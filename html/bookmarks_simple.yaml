@@ -1,18 +1,21 @@
 version: 0.1.0
 length: 3
 value:
-- id: 2
+- id: 0
   entity:
-    uri: https://news.ycombinator.com/
-    createdAt: 1609632000
-    updatedAt: []
+    uri: https://example.com/
+    createdAt: 1609459200
+    updatedAt:
+    - 1609459200
     names:
-    - Hacker News
+    - Example Website
     labels:
-    - news
-    shared: false
+    - example
+    - test
+    shared: true
     toRead: false
     isFeed: false
+    extended: A simple example website for testing
   edges: []
 - id: 1
   entity:
@@ -30,19 +33,16 @@ value:
     extended: Code hosting platform
     lastVisitedAt: 1609632000
   edges: []
-- id: 0
+- id: 2
   entity:
-    uri: https://example.com/
-    createdAt: 1609459200
-    updatedAt:
-    - 1609459200
+    uri: https://news.ycombinator.com/
+    createdAt: 1609632000
+    updatedAt: []
     names:
-    - Example Website
+    - Hacker News
     labels:
-    - example
-    - test
-    shared: true
+    - news
+    shared: false
     toRead: false
     isFeed: false
-    extended: A simple example website for testing
   edges: []

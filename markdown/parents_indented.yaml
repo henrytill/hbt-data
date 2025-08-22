@@ -1,13 +1,13 @@
 version: 0.1.0
 length: 3
 value:
-- id: 2
+- id: 0
   entity:
-    uri: https://baz.com/
+    uri: https://foo.com/
     createdAt: 1700006400
     updatedAt: []
     names:
-    - Baz
+    - Foo
     labels: []
     shared: false
     toRead: false
@@ -28,13 +28,13 @@ value:
   edges:
   - 0
   - 2
-- id: 0
+- id: 2
   entity:
-    uri: https://foo.com/
+    uri: https://baz.com/
     createdAt: 1700006400
     updatedAt: []
     names:
-    - Foo
+    - Baz
     labels: []
     shared: false
     toRead: false

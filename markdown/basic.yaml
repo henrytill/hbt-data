@@ -1,15 +1,15 @@
 version: 0.1.0
 length: 3
 value:
-- id: 2
+- id: 0
   entity:
-    uri: https://example.com/
+    uri: https://foo.com/
     createdAt: 1700092800
     updatedAt: []
     names:
-    - Hello, world!
+    - Foo
     labels:
-    - Misc
+    - Foo
     shared: false
     toRead: false
     isFeed: false
@@ -27,15 +27,15 @@ value:
     toRead: false
     isFeed: false
   edges: []
-- id: 0
+- id: 2
   entity:
-    uri: https://foo.com/
+    uri: https://example.com/
     createdAt: 1700092800
     updatedAt: []
     names:
-    - Foo
+    - Hello, world!
     labels:
-    - Foo
+    - Misc
     shared: false
     toRead: false
     isFeed: false
