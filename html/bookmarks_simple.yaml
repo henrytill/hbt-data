@@ -1,0 +1,48 @@
+version: 0.1.0
+length: 3
+value:
+- id: 2
+  entity:
+    uri: https://news.ycombinator.com/
+    createdAt: 1609632000
+    updatedAt: []
+    names:
+    - Hacker News
+    labels:
+    - news
+    shared: false
+    toread: false
+    isFeed: false
+  edges: []
+- id: 1
+  entity:
+    uri: https://github.com/
+    createdAt: 1609545600
+    updatedAt: []
+    names:
+    - GitHub
+    labels:
+    - git
+    - programming
+    shared: true
+    toread: false
+    isFeed: false
+    extended: Code hosting platform
+    lastVisitedAt: 1609632000
+  edges: []
+- id: 0
+  entity:
+    uri: https://example.com/
+    createdAt: 1609459200
+    updatedAt:
+    - 1609459200
+    names:
+    - Example Website
+    labels:
+    - example
+    - test
+    shared: true
+    toread: false
+    isFeed: false
+    extended: A simple example website for testing
+  edges: []

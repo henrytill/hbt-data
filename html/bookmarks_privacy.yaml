@@ -1,0 +1,93 @@
+version: 0.1.0
+length: 6
+value:
+- id: 5
+  entity:
+    uri: https://private-feed.example.com/rss
+    createdAt: 1609977600
+    updatedAt: []
+    names:
+    - Private RSS Feed
+    labels:
+    - feed
+    - private
+    shared: false
+    toread: false
+    isFeed: true
+    extended: Private feed bookmark
+  edges: []
+- id: 4
+  entity:
+    uri: https://public-feed.example.com/rss
+    createdAt: 1609891200
+    updatedAt: []
+    names:
+    - Public RSS Feed
+    labels:
+    - feed
+    - public
+    shared: true
+    toread: false
+    isFeed: true
+    extended: Public feed bookmark
+  edges: []
+- id: 3
+  entity:
+    uri: https://secret-project.example.com/
+    createdAt: 1609718400
+    updatedAt: []
+    names:
+    - Secret Project
+    labels:
+    - project
+    - secret
+    shared: false
+    toread: false
+    isFeed: false
+    extended: Private bookmark with last visit time
+    lastVisitedAt: 1609804800
+  edges: []
+- id: 2
+  entity:
+    uri: https://github.com/
+    createdAt: 1609632000
+    updatedAt: []
+    names:
+    - GitHub (no privacy flag)
+    labels:
+    - programming
+    shared: true
+    toread: false
+    isFeed: false
+    extended: This bookmark has no privacy flag (defaults to public)
+  edges: []
+- id: 1
+  entity:
+    uri: https://internal.company.com/
+    createdAt: 1609545600
+    updatedAt: []
+    names:
+    - Internal Company Site
+    labels:
+    - internal
+    - work
+    shared: false
+    toread: false
+    isFeed: false
+    extended: This bookmark is private (PRIVATE="1")
+  edges: []
+- id: 0
+  entity:
+    uri: https://example.com/
+    createdAt: 1609459200
+    updatedAt: []
+    names:
+    - Public Example
+    labels:
+    - example
+    - public
+    shared: true
+    toread: false
+    isFeed: false
+    extended: This bookmark is public (PRIVATE="0")
+  edges: []

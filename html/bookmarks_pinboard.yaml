@@ -1,0 +1,46 @@
+version: 0.1.0
+length: 3
+value:
+- id: 2
+  entity:
+    uri: https://www.intel.com/content/www/us/en/developer/tools/oneapi/vtune-profiler.html
+    createdAt: 1649855530
+    updatedAt: []
+    names:
+    - "Fix Performance Bottlenecks with Intel\xAE VTune\u2122 Profiler"
+    labels:
+    - performance
+    - profiling
+    - tools
+    shared: false
+    toread: true
+    isFeed: false
+  edges: []
+- id: 1
+  entity:
+    uri: https://docs.microsoft.com/en-us/sysinternals/downloads/procmon
+    createdAt: 1606184699
+    updatedAt: []
+    names:
+    - Process Monitor - Windows Sysinternals | Microsoft Docs
+    labels:
+    - windows-dev
+    shared: false
+    toread: false
+    isFeed: false
+    extended: Monitor file system, Registry, process, thread and DLL activity in real-time.
+  edges: []
+- id: 0
+  entity:
+    uri: http://c-faq.com/decl/spiral.anderson.html
+    createdAt: 1653114361
+    updatedAt: []
+    names:
+    - Clockwise/Spiral Rule
+    labels:
+    - c
+    - c++
+    shared: true
+    toread: false
+    isFeed: false
+  edges: []
