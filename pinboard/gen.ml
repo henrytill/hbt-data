@@ -6,7 +6,7 @@ let generate_xml_rule base =
  (action
   (with-stdout-to
    %s_out.yaml
-   (setenv TZ UTC (run %%{bin:hbt} --dump ../%s.xml)))))
+   (setenv TZ UTC (run %%{bin:hbt} -t yaml ../%s.xml)))))
 
 (rule
  (package hbt)
@@ -27,7 +27,7 @@ let generate_json_rule base =
  (action
   (with-stdout-to
    %s_out.yaml
-   (setenv TZ UTC (run %%{bin:hbt} --dump ../%s.json)))))
+   (setenv TZ UTC (run %%{bin:hbt} -t yaml ../%s.json)))))
 
 (rule
  (package hbt)

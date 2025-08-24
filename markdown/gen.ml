@@ -6,7 +6,7 @@ let generate_rule base =
  (action
   (with-stdout-to
    %s_out.yaml
-   (setenv TZ UTC (run %%{bin:hbt} --dump ../%s.md)))))
+   (setenv TZ UTC (run %%{bin:hbt} -t yaml ../%s.md)))))
 
 (rule
  (package hbt)

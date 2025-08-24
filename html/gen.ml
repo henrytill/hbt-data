@@ -8,7 +8,7 @@ let generate_rules base =
  (action
   (with-stdout-to
    %s_out.yaml
-   (run %%{bin:hbt} --dump ../%s.html))))
+   (run %%{bin:hbt} -t yaml ../%s.html))))
 
 (rule
  (package hbt)
