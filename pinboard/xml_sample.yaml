@@ -6,8 +6,7 @@ value:
     uri: http://kcachegrind.sourceforge.net/html/Home.html
     createdAt: 1649836892
     updatedAt: []
-    names:
-    - ""
+    names: []
     labels:
     - performance
     - profiling
@@ -15,7 +14,6 @@ value:
     shared: false
     toRead: false
     isFeed: false
-    extended: ""
   edges: []
 - id: 1
   entity:
@@ -23,7 +21,7 @@ value:
     createdAt: 1649855530
     updatedAt: []
     names:
-    - "Fix Performance Bottlenecks with Intel\xAE VTune\u2122 Profiler"
+    - Fix Performance Bottlenecks with Intel® VTune™ Profiler
     labels:
     - performance
     - profiling
@@ -31,7 +29,6 @@ value:
     shared: false
     toRead: true
     isFeed: false
-    extended: ""
   edges: []
 - id: 2
   entity:
@@ -39,8 +36,7 @@ value:
     createdAt: 1650673776
     updatedAt: []
     names:
-    - 'janestreet/magic-trace: magic-trace collects and displays high-resolution traces
-      of what a process is doing'
+    - 'janestreet/magic-trace: magic-trace collects and displays high-resolution traces of what a process is doing'
     labels:
     - performance
     - profiling

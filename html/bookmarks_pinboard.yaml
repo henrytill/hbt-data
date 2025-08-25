@@ -35,7 +35,7 @@ value:
     createdAt: 1649855530
     updatedAt: []
     names:
-    - "Fix Performance Bottlenecks with Intel\xAE VTune\u2122 Profiler"
+    - Fix Performance Bottlenecks with Intel® VTune™ Profiler
     labels:
     - performance
     - profiling

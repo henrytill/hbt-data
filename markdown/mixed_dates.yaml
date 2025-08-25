@@ -6,8 +6,8 @@ value:
     uri: https://foo.com/
     createdAt: 1701734400
     updatedAt:
-    - 1701907200
     - 1701820800
+    - 1701907200
     names:
     - Bar
     - Baz
