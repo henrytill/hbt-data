@@ -21,7 +21,7 @@ value:
     createdAt: 1606184699
     updatedAt: []
     names:
-    - Process Monitor - Windows Sysinternals | Microsoft Docs
+    - 'Process Monitor - Windows Sysinternals | Microsoft Docs'
     labels:
     - windows-dev
     shared: false
