@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SerializedCollection",
+  "type": "object",
+  "properties": {
+    "length": {
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0
+    },
+    "value": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SerializedNode"
+      }
+    },
+    "version": {
+      "$ref": "#/$defs/Version"
+    }
+  },
+  "required": [
+    "version",
+    "length",
+    "value"
+  ],
+  "$defs": {
+    "Entity": {
+      "description": "An [`Entity`] is a page in the collection.",
+      "type": "object",
+      "properties": {
+        "createdAt": {
+          "$ref": "#/$defs/Time"
+        },
+        "extended": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Extended"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "isFeed": {
+          "type": "boolean"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Label"
+          },
+          "uniqueItems": true
+        },
+        "lastVisitedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Name"
+          },
+          "uniqueItems": true
+        },
+        "shared": {
+          "type": "boolean"
+        },
+        "toRead": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Time"
+          }
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "uri",
+        "createdAt",
+        "updatedAt",
+        "names",
+        "labels",
+        "shared",
+        "toRead",
+        "isFeed"
+      ]
+    },
+    "Extended": {
+      "description": "A [`Extended`] is text that can be attached to an [`Entity`].",
+      "type": "string"
+    },
+    "Id": {
+      "description": "An [`Id`] is a unique identifier for an [`Entity`].",
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0
+    },
+    "Label": {
+      "description": "A [`Label`] is text that can be attached to an [`Entity`].",
+      "type": "string"
+    },
+    "Name": {
+      "description": "A [`Name`] describes an [`Entity`].",
+      "type": "string"
+    },
+    "SemVer": {
+      "type": "string",
+      "pattern": "^(0|[1-9]//d*)//.(0|[1-9]//d*)//.(0|[1-9]//d*)(?:-((?:0|[1-9]//d*|//d*[a-zA-Z-][0-9a-zA-Z-]*)(?://.(?:0|[1-9]//d*|//d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?://+([0-9a-zA-Z-]+(?://.[0-9a-zA-Z-]+)*))?$"
+    },
+    "SerializedNode": {
+      "type": "object",
+      "properties": {
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        },
+        "entity": {
+          "$ref": "#/$defs/Entity"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "id",
+        "entity",
+        "edges"
+      ]
+    },
+    "Time": {
+      "type": "integer",
+      "format": "int64"
+    },
+    "Version": {
+      "$ref": "#/$defs/SemVer"
+    }
+  }
+}
