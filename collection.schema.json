@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "SerializedCollection",
+  "title": "CollectionRepr",
   "type": "object",
   "properties": {
     "length": {
@@ -11,7 +11,7 @@
     "value": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/SerializedNode"
+        "$ref": "#/$defs/NodeRepr"
       }
     },
     "version": {
@@ -114,11 +114,7 @@
       "description": "A [`Name`] describes an [`Entity`].",
       "type": "string"
     },
-    "SemVer": {
-      "type": "string",
-      "pattern": "^(0|[1-9]//d*)//.(0|[1-9]//d*)//.(0|[1-9]//d*)(?:-((?:0|[1-9]//d*|//d*[a-zA-Z-][0-9a-zA-Z-]*)(?://.(?:0|[1-9]//d*|//d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?://+([0-9a-zA-Z-]+(?://.[0-9a-zA-Z-]+)*))?$"
-    },
-    "SerializedNode": {
+    "NodeRepr": {
       "type": "object",
       "properties": {
         "edges": {
@@ -139,6 +135,10 @@
         "entity",
         "edges"
       ]
+    },
+    "SemVer": {
+      "type": "string",
+      "pattern": "^(0|[1-9]//d*)//.(0|[1-9]//d*)//.(0|[1-9]//d*)(?:-((?:0|[1-9]//d*|//d*[a-zA-Z-][0-9a-zA-Z-]*)(?://.(?:0|[1-9]//d*|//d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?://+([0-9a-zA-Z-]+(?://.[0-9a-zA-Z-]+)*))?$"
     },
     "Time": {
       "type": "integer",
