@@ -25,7 +25,6 @@
   ],
   "$defs": {
     "Entity": {
-      "description": "An [`Entity`] is a page in the collection.",
       "type": "object",
       "properties": {
         "createdAt": {
@@ -97,21 +96,17 @@
       ]
     },
     "Extended": {
-      "description": "A [`Extended`] is text that can be attached to an [`Entity`].",
       "type": "string"
     },
     "Id": {
-      "description": "An [`Id`] is a unique identifier for an [`Entity`].",
       "type": "integer",
       "format": "uint",
       "minimum": 0
     },
     "Label": {
-      "description": "A [`Label`] is text that can be attached to an [`Entity`].",
       "type": "string"
     },
     "Name": {
-      "description": "A [`Name`] describes an [`Entity`].",
       "type": "string"
     },
     "NodeRepr": {
