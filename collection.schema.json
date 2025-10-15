@@ -15,7 +15,7 @@
       }
     },
     "version": {
-      "$ref": "#/$defs/Version"
+      "$ref": "#/$defs/SemVer"
     }
   },
   "required": [
@@ -138,9 +138,6 @@
     "Time": {
       "type": "integer",
       "format": "int64"
-    },
-    "Version": {
-      "$ref": "#/$defs/SemVer"
     }
   }
 }
