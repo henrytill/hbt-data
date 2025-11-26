@@ -28,7 +28,8 @@ value:
     shared: true
     toRead: false
     isFeed: true
-    extended: Technology insights and trends
+    extended:
+    - Technology insights and trends
   edges: []
 - id: 2
   entity:
@@ -44,7 +45,8 @@ value:
     shared: true
     toRead: false
     isFeed: true
-    extended: OCaml community blog aggregator
+    extended:
+    - OCaml community blog aggregator
   edges: []
 - id: 3
   entity:

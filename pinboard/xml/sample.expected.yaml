@@ -44,5 +44,6 @@ value:
     shared: true
     toRead: false
     isFeed: false
-    extended: tragically intel-only
+    extended:
+    - tragically intel-only
   edges: []

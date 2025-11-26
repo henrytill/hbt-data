@@ -27,7 +27,8 @@ value:
     shared: false
     toRead: false
     isFeed: false
-    extended: Monitor file system, Registry, process, thread and DLL activity in real-time.
+    extended:
+    - Monitor file system, Registry, process, thread and DLL activity in real-time.
   edges: []
 - id: 2
   entity:

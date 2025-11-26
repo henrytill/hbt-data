@@ -15,7 +15,8 @@ value:
     shared: true
     toRead: false
     isFeed: false
-    extended: A simple example website for testing
+    extended:
+    - A simple example website for testing
   edges: []
 - id: 1
   entity:
@@ -30,7 +31,8 @@ value:
     shared: true
     toRead: false
     isFeed: false
-    extended: Code hosting platform
+    extended:
+    - Code hosting platform
     lastVisitedAt: 1609632000
   edges: []
 - id: 2

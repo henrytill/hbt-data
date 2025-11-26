@@ -28,7 +28,8 @@ value:
     shared: true
     toRead: false
     isFeed: false
-    extended: Code hosting and collaboration
+    extended:
+    - Code hosting and collaboration
   edges: []
 - id: 2
   entity:
@@ -60,7 +61,8 @@ value:
     shared: true
     toRead: false
     isFeed: false
-    extended: Industrial-strength functional programming
+    extended:
+    - Industrial-strength functional programming
   edges: []
 - id: 4
   entity:
