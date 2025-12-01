@@ -10,8 +10,6 @@ value:
     - Example Website
     labels:
     - example
-    shared: true
-    toRead: false
     isFeed: false
   edges: []
 - id: 1
@@ -25,8 +23,6 @@ value:
     - Programming
     - git
     - hosting
-    shared: true
-    toRead: false
     isFeed: false
     extended:
     - Code hosting and collaboration
@@ -42,8 +38,6 @@ value:
     - Programming
     - git
     - hosting
-    shared: true
-    toRead: false
     isFeed: false
   edges: []
 - id: 3
@@ -58,8 +52,6 @@ value:
     - Programming
     - functional
     - ml
-    shared: true
-    toRead: false
     isFeed: false
     extended:
     - Industrial-strength functional programming
@@ -76,8 +68,6 @@ value:
     - Programming
     - safety
     - systems
-    shared: true
-    toRead: false
     isFeed: false
   edges: []
 - id: 5
@@ -92,7 +82,6 @@ value:
     - startup
     - tech
     shared: false
-    toRead: false
     isFeed: false
   edges: []
 - id: 6
@@ -106,7 +95,5 @@ value:
     - News
     - programming
     - tech
-    shared: true
-    toRead: false
     isFeed: false
   edges: []

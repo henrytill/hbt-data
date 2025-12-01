@@ -10,8 +10,6 @@ value:
     - Example Website
     labels:
     - example
-    shared: true
-    toRead: false
     isFeed: false
   edges: []
 - id: 1
@@ -25,8 +23,6 @@ value:
     - RSS Feeds
     - books
     - tech
-    shared: true
-    toRead: false
     isFeed: true
     extended:
     - Technology insights and trends
@@ -42,8 +38,6 @@ value:
     - RSS Feeds
     - functional
     - ocaml
-    shared: true
-    toRead: false
     isFeed: true
     extended:
     - OCaml community blog aggregator
@@ -59,8 +53,6 @@ value:
     - RSS Feeds
     - rust
     - weekly
-    shared: true
-    toRead: false
     isFeed: true
   edges: []
 - id: 4
@@ -74,8 +66,6 @@ value:
     - Regular Sites
     - git
     - programming
-    shared: true
-    toRead: false
     isFeed: false
   edges: []
 - id: 5
@@ -89,8 +79,6 @@ value:
     - Regular Sites
     - news
     - tech
-    shared: true
-    toRead: false
     isFeed: false
     lastVisitedAt: 1610064000
   edges: []

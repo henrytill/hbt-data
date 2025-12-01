@@ -12,8 +12,6 @@ value:
     labels:
     - example
     - test
-    shared: true
-    toRead: false
     isFeed: false
     extended:
     - A simple example website for testing
@@ -28,8 +26,6 @@ value:
     labels:
     - git
     - programming
-    shared: true
-    toRead: false
     isFeed: false
     extended:
     - Code hosting platform
@@ -45,6 +41,5 @@ value:
     labels:
     - news
     shared: false
-    toRead: false
     isFeed: false
   edges: []

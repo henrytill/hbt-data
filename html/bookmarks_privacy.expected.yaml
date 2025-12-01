@@ -12,7 +12,6 @@ value:
     - example
     - public
     shared: true
-    toRead: false
     isFeed: false
     extended:
     - This bookmark is public (PRIVATE="0")
@@ -28,7 +27,6 @@ value:
     - internal
     - work
     shared: false
-    toRead: false
     isFeed: false
     extended:
     - This bookmark is private (PRIVATE="1")
@@ -42,8 +40,6 @@ value:
     - GitHub (no privacy flag)
     labels:
     - programming
-    shared: true
-    toRead: false
     isFeed: false
     extended:
     - This bookmark has no privacy flag (defaults to public)
@@ -59,7 +55,6 @@ value:
     - project
     - secret
     shared: false
-    toRead: false
     isFeed: false
     extended:
     - Private bookmark with last visit time
@@ -76,7 +71,6 @@ value:
     - feed
     - public
     shared: true
-    toRead: false
     isFeed: true
     extended:
     - Public feed bookmark
@@ -92,7 +86,6 @@ value:
     - feed
     - private
     shared: false
-    toRead: false
     isFeed: true
     extended:
     - Private feed bookmark
