@@ -31,14 +31,11 @@
           "$ref": "#/$defs/Time"
         },
         "extended": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Extended"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Extended"
+          }
         },
         "isFeed": {
           "type": "boolean"
