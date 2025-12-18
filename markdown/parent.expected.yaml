@@ -9,9 +9,6 @@ value:
     names:
     - Foo
     labels: []
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 1
 - id: 1
@@ -22,8 +19,5 @@ value:
     names:
     - Bar
     labels: []
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 0

@@ -12,8 +12,6 @@ value:
     - c
     - c++
     shared: true
-    toRead: false
-    isFeed: false
   edges: []
 - id: 1
   entity:
@@ -25,8 +23,6 @@ value:
     labels:
     - windows-dev
     shared: false
-    toRead: false
-    isFeed: false
     extended:
     - Monitor file system, Registry, process, thread and DLL activity in real-time.
   edges: []
@@ -43,5 +39,4 @@ value:
     - tools
     shared: false
     toRead: true
-    isFeed: false
   edges: []

@@ -10,9 +10,6 @@ value:
     - Foo
     labels:
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges: []
 - id: 1
   entity:
@@ -23,9 +20,6 @@ value:
     - Bar
     labels:
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges: []
 - id: 2
   entity:
@@ -36,9 +30,6 @@ value:
     - Baz
     labels:
     - Baz
-    shared: false
-    toRead: false
-    isFeed: false
   edges: []
 - id: 3
   entity:
@@ -49,7 +40,4 @@ value:
     - Quux
     labels:
     - Baz
-    shared: false
-    toRead: false
-    isFeed: false
   edges: []

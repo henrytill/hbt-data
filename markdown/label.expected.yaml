@@ -10,9 +10,6 @@ value:
     - Foo
     labels:
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges: []
 - id: 1
   entity:
@@ -23,7 +20,4 @@ value:
     - Bar
     labels:
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges: []

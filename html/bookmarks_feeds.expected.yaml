@@ -10,7 +10,6 @@ value:
     - Example Website
     labels:
     - example
-    isFeed: false
   edges: []
 - id: 1
   entity:
@@ -66,7 +65,6 @@ value:
     - Regular Sites
     - git
     - programming
-    isFeed: false
   edges: []
 - id: 5
   entity:
@@ -79,6 +77,5 @@ value:
     - Regular Sites
     - news
     - tech
-    isFeed: false
     lastVisitedAt: 1610064000
   edges: []

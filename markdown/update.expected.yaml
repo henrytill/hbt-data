@@ -13,7 +13,4 @@ value:
     labels:
     - Bar
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges: []

@@ -9,7 +9,4 @@ value:
     names:
     - Hello `Foo`, world!
     labels: []
-    shared: false
-    toRead: false
-    isFeed: false
   edges: []

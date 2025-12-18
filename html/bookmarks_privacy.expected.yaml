@@ -12,7 +12,6 @@ value:
     - example
     - public
     shared: true
-    isFeed: false
     extended:
     - This bookmark is public (PRIVATE="0")
   edges: []
@@ -27,7 +26,6 @@ value:
     - internal
     - work
     shared: false
-    isFeed: false
     extended:
     - This bookmark is private (PRIVATE="1")
   edges: []
@@ -40,7 +38,6 @@ value:
     - GitHub (no privacy flag)
     labels:
     - programming
-    isFeed: false
     extended:
     - This bookmark has no privacy flag (defaults to public)
   edges: []
@@ -55,7 +52,6 @@ value:
     - project
     - secret
     shared: false
-    isFeed: false
     extended:
     - Private bookmark with last visit time
     lastVisitedAt: 1609804800

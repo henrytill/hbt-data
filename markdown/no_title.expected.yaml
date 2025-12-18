@@ -8,7 +8,4 @@ value:
     updatedAt: []
     names: []
     labels: []
-    shared: false
-    toRead: false
-    isFeed: false
   edges: []

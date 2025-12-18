@@ -9,9 +9,6 @@ value:
     names:
     - Foo
     labels: []
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 1
   - 2
@@ -24,9 +21,6 @@ value:
     names:
     - Bar
     labels: []
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 0
 - id: 2
@@ -37,9 +31,6 @@ value:
     names:
     - Baz
     labels: []
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 0
 - id: 3
@@ -50,8 +41,5 @@ value:
     names:
     - Quux
     labels: []
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 0

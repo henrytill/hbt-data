@@ -10,9 +10,6 @@ value:
     - Foo
     labels:
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 1
   - 2
@@ -25,9 +22,6 @@ value:
     names: []
     labels:
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 0
 - id: 2
@@ -39,9 +33,6 @@ value:
     - Hello, world!
     labels:
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 0
   - 3
@@ -54,9 +45,6 @@ value:
     - Quux
     labels:
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 2
 - id: 4
@@ -67,8 +55,5 @@ value:
     names: []
     labels:
     - Foo
-    shared: false
-    toRead: false
-    isFeed: false
   edges:
   - 0

@@ -12,7 +12,6 @@ value:
     labels:
     - example
     - test
-    isFeed: false
     extended:
     - A simple example website for testing
   edges: []
@@ -26,7 +25,6 @@ value:
     labels:
     - git
     - programming
-    isFeed: false
     extended:
     - Code hosting platform
     lastVisitedAt: 1609632000
@@ -41,5 +39,4 @@ value:
     labels:
     - news
     shared: false
-    isFeed: false
   edges: []
