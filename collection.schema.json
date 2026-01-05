@@ -38,7 +38,10 @@
           }
         },
         "isFeed": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "labels": {
           "type": "array",
@@ -65,10 +68,16 @@
           "uniqueItems": true
         },
         "shared": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "toRead": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "updatedAt": {
           "type": "array",
@@ -86,10 +95,7 @@
         "createdAt",
         "updatedAt",
         "names",
-        "labels",
-        "shared",
-        "toRead",
-        "isFeed"
+        "labels"
       ]
     },
     "Extended": {
