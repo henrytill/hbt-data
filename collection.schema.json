@@ -101,11 +101,6 @@
     "Extended": {
       "type": "string"
     },
-    "Id": {
-      "type": "integer",
-      "format": "uint",
-      "minimum": 0
-    },
     "Label": {
       "type": "string"
     },
@@ -118,14 +113,18 @@
         "edges": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/Id"
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0
           }
         },
         "entity": {
           "$ref": "#/$defs/Entity"
         },
         "id": {
-          "$ref": "#/$defs/Id"
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
         }
       },
       "required": [
