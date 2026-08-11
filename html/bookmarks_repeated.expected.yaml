@@ -1,0 +1,25 @@
+version: 0.1.0
+length: 2
+value:
+- id: 0
+  entity:
+    uri: https://example.com/
+    createdAt: 1609459200
+    updatedAt: []
+    names:
+    - Example Website
+    labels:
+    - example
+    extended:
+    - A simple example website for testing
+  edges: []
+- id: 1
+  entity:
+    uri: https://github.com/
+    createdAt: 1609545600
+    updatedAt: []
+    names:
+    - GitHub
+    labels:
+    - git
+  edges: []
