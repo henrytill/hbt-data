@@ -35,7 +35,8 @@
           "default": [],
           "items": {
             "$ref": "#/$defs/Extended"
-          }
+          },
+          "uniqueItems": true
         },
         "isFeed": {
           "type": [
