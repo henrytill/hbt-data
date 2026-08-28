@@ -117,7 +117,8 @@
             "type": "integer",
             "format": "uint32",
             "minimum": 0
-          }
+          },
+          "uniqueItems": true
         },
         "entity": {
           "$ref": "#/$defs/Entity"
