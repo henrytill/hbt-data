@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Sequence, TextIO, cast
 
 from hbt.conformance import __version__
-from hbt.conformance.corpus import Corpus, Fixture, UnknownSidecar, categories, coverage, revision
+from hbt.conformance.corpus import Corpus, CorpusError, Fixture, categories, coverage, revision
 from hbt.conformance.runner import DEFAULT_TIMEOUT, Outcome, Result, check
 
 
@@ -140,7 +140,7 @@ def main(argv: Sequence[str] | None = None, out: TextIO | None = None) -> int:
 
     try:
         corpus = Corpus.discover(args.corpus)
-    except UnknownSidecar as exc:
+    except CorpusError as exc:
         print(f"error: {exc}", file=stream)
         return 2
 
