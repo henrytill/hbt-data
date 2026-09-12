@@ -57,6 +57,13 @@ class Diagnosis(unittest.TestCase):
         (fixture,) = self.fixture().fixtures
         self.assertIs(check(fixture, self.stub(DOCUMENT)).outcome, Outcome.PASS)
 
+    def test_non_ascii_output_is_read_as_utf8_whatever_the_locale_is(self) -> None:
+        """text=True would decode this with the locale's codec, and abort."""
+        document = DOCUMENT.replace("names: []", "names:\n    - caf\u00e9")
+        self.write("markdown/a.expected.yaml", document)
+        (fixture,) = self.fixture().fixtures
+        self.assertIs(check(fixture, self.stub(document)).outcome, Outcome.PASS)
+
     def test_a_malformed_expectation_is_reported_against_the_corpus(self) -> None:
         """Otherwise one corpus bug reads as the same bug in four parsers."""
         self.write("markdown/a.expected.yaml", DOCUMENT.replace("version: 0.1.0", "version: one"))
