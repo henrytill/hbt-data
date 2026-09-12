@@ -32,7 +32,10 @@
           );
           pyproject = true;
           build-system = [ pkgs.python3Packages.flit-core ];
-          dependencies = [ pkgs.python3Packages.pyyaml ];
+          dependencies = with pkgs.python3Packages; [
+            click
+            pyyaml
+          ];
           # unittest from the standard library; the tests are the normalizer's,
           # and adding a test runner to the dependency closure of four
           # implementations to run sixteen of them is not a trade worth making.
