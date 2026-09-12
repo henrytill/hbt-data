@@ -17,7 +17,13 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        hbtConformance = pkgs.python3Packages.buildPythonApplication {
+        # buildPythonPackage, not buildPythonApplication: hbt-analysis imports
+        # this to build the cross-implementation matrix -- one comparator over
+        # four binaries, with the per-fixture results the text report throws
+        # away -- and an application is not on the import path of a
+        # python3.withPackages environment. flit still generates the console
+        # script from [project.scripts], so `hbt-conformance` is unaffected.
+        hbtConformance = pkgs.python3Packages.buildPythonPackage {
           pname = "hbt-conformance";
           # From __init__.py, which pyproject's dynamic version already makes
           # the one source the wheel is built from.
