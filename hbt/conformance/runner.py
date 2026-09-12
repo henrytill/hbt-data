@@ -39,8 +39,8 @@ DEFAULT_TIMEOUT = 30.0
 
 #: How each output format's bytes are compared against its expectation.  The
 #: two rules differ deliberately -- see :mod:`hbt.conformance.normalize`.
-COMPARATORS: dict[str, Callable[[str, str], list[Difference]]] = {
-    "yaml": lambda expected, actual: compare(load_yaml(expected), load_yaml(actual)),
+COMPARATORS: dict[str, Callable[[bytes, bytes], list[Difference]]] = {
+    "yaml": lambda expected, actual: compare(load_yaml(_decode(expected)), load_yaml(_decode(actual))),
     "html": compare_html,
 }
 
@@ -139,9 +139,12 @@ def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: 
             continue
         if fmt not in fixture.expected:
             continue
-        expected = fixture.expected[fmt].read_text(encoding="utf-8")
+        # Bytes on both sides: the `-t html` rule is byte equality, and
+        # text mode would translate a CRLF divergence out of existence
+        # before the comparison saw it.
+        expected = fixture.expected[fmt].read_bytes()
         try:
-            found = COMPARATORS[fmt](expected, _decode(proc.stdout))
+            found = COMPARATORS[fmt](expected, proc.stdout)
         except (NormalizationError, yaml.YAMLError) as exc:
             failed.append(fmt)
             differences.append(Difference(f"$({fmt})", "a Collection", str(exc)))

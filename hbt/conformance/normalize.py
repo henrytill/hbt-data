@@ -279,7 +279,21 @@ def compare(expected: object, actual: object) -> list[Difference]:
     return differences
 
 
-def compare_html(expected: str, actual: str) -> list[Difference]:
+def _strip_terminator(document: bytes) -> bytes:
+    """``document`` without its final line terminator, in either flavour."""
+    return document.removesuffix(b"\r\n").removesuffix(b"\n")
+
+
+def _line_endings(document: bytes) -> str:
+    """How ``document`` terminates its lines, for a report that says so."""
+    crlf = document.count(b"\r\n")
+    lf = document.count(b"\n") - crlf
+    if crlf and lf:
+        return "mixed CRLF and LF line endings"
+    return "CRLF line endings" if crlf else "LF line endings"
+
+
+def compare_html(expected: bytes, actual: bytes) -> list[Difference]:
     """Compare rendered Netscape bookmark files.
 
     Byte equality, modulo a single trailing newline -- none of the leniency
@@ -289,17 +303,36 @@ def compare_html(expected: str, actual: str) -> list[Difference]:
     at all is a real divergence in a shared output format rather than a
     serializer's house style.  Widening this rule should be a decision taken
     when a divergence turns out to be legitimate, not a default.
+
+    Bytes, not text, because that rule is otherwise not what runs: reading
+    the expectation in text mode and capturing the output through a decoding
+    pipe both translate CRLF to LF, so an implementation that started
+    emitting DOS line endings in a shared output format would pass a
+    comparison whose whole point is that the bytes match.  A difference in
+    nothing but line endings is reported as that rather than as a diff, which
+    would otherwise print two identical-looking lines.
     """
-    left = expected.removesuffix("\n")
-    right = actual.removesuffix("\n")
+    left = _strip_terminator(expected)
+    right = _strip_terminator(actual)
     if left == right:
         return []
+    if left.replace(b"\r\n", b"\n") == right.replace(b"\r\n", b"\n"):
+        return [Difference("$html", _line_endings(left), _line_endings(right))]
     diff = difflib.unified_diff(
-        left.splitlines(),
-        right.splitlines(),
+        _lines(left),
+        _lines(right),
         fromfile="expected",
         tofile="actual",
         lineterm="",
         n=1,
     )
     return [Difference("$html", None, "\n".join(diff), kind="text")]
+
+
+def _lines(document: bytes) -> list[str]:
+    """``document`` as diffable text, whatever it turns out to contain.
+
+    ``errors="replace"`` for the same reason the runner decodes that way: a
+    document this cannot read is a divergence to report, not a traceback.
+    """
+    return document.decode("utf-8", errors="replace").splitlines()
