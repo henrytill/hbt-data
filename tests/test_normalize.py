@@ -96,6 +96,27 @@ class Refusals(unittest.TestCase):
         with self.assertRaisesRegex(NormalizationError, "length"):
             normalize(doc)
 
+    def test_an_empty_string_is_not_an_empty_list(self) -> None:
+        """Only null reads as absent.  Every other non-sequence is a failure.
+
+        A serializer emitting ``names: ''`` for an entity with no names has
+        changed the serialized form, which is exactly what this harness exists
+        to catch.
+        """
+        empties: list[Any] = ["", {}, 0, False]
+        for empty in empties:
+            with self.subTest(empty=empty):
+                with self.assertRaisesRegex(NormalizationError, "names"):
+                    normalize(collection(entity(names=empty)))
+
+    def test_an_empty_string_is_not_an_empty_value_list(self) -> None:
+        empties: list[Any] = ["", {}, 0, False]
+        for empty in empties:
+            with self.subTest(empty=empty):
+                doc = {"version": "0.1.0", "length": 0, "value": empty}
+                with self.assertRaisesRegex(NormalizationError, r"\$\.value"):
+                    normalize(doc)
+
     def test_a_bad_version_is_a_failure(self) -> None:
         doc = collection(entity())
         doc["version"] = "one"

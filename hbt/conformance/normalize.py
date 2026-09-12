@@ -161,7 +161,7 @@ def _string(value: object, path: str) -> str:
 
 def _set_of(value: object, path: str, item: Callable[[object, str], T]) -> list[T]:
     """A ``uniqueItems`` field.  Absent and null both read as empty."""
-    entries = _require_sequence(value or [], path)
+    entries = _require_sequence([] if value is None else value, path)
     out = [item(entry, f"{path}[{i}]") for i, entry in enumerate(entries)]
     _unique(out, path)
     return out
@@ -219,7 +219,9 @@ def normalize(document: object) -> dict[str, Any]:
     if not isinstance(version, str) or not SEMVER.match(version):
         raise NormalizationError("$.version", f"expected a semver string, got {version!r}")
 
-    nodes = [_node(n, f"$.value[{i}]") for i, n in enumerate(_require_sequence(raw.get("value") or [], "$.value"))]
+    value = raw.get("value")
+    entries = _require_sequence([] if value is None else value, "$.value")
+    nodes = [_node(n, f"$.value[{i}]") for i, n in enumerate(entries)]
 
     length = raw.get("length")
     if length is None:
