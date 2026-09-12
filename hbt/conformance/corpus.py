@@ -73,6 +73,15 @@ class CorpusError(Exception):
     """
 
 
+class NoCorpus(CorpusError):
+    """The corpus could not be located, and none was named.
+
+    Raised when the default -- walk up from this file -- lands somewhere that
+    holds none of :data:`CATEGORIES`, which is what happens whenever the
+    package is installed rather than run from a checkout.
+    """
+
+
 class UnknownSidecar(CorpusError):
     """A ``<stem>.expected.*`` file that no output format claims.
 
@@ -185,9 +194,25 @@ def _check_category(path: Path, category: str) -> None:
         raise MisfiledInput(f"{path.name} is in {category}, which holds {takes} inputs")
 
 
+def _looks_like_a_corpus(root: Path) -> bool:
+    """Whether ``root`` holds at least one of the corpus categories."""
+    return any((root / category).is_dir() for category in CATEGORIES)
+
+
 def _root() -> Path:
-    # hbt/conformance/corpus.py -> the repository root.
-    return Path(__file__).resolve().parents[2]
+    """The corpus checkout this module was imported from.
+
+    Walking up from the source file finds the corpus for the case this
+    harness is written for -- a bare checkout, run as `python3 -m
+    hbt.conformance`.  Installed, the same walk lands on site-packages, which
+    is not a corpus and, worse, is full of other packages' files that
+    discovery would then report on.  So the walk has to be checked rather
+    than trusted, and the caller told about `--corpus`.
+    """
+    root = Path(__file__).resolve().parents[2]
+    if not _looks_like_a_corpus(root):
+        raise NoCorpus(f"{root} is not a corpus checkout -- pass --corpus to say where the fixtures are")
+    return root
 
 
 def revision(root: Path | None = None) -> str:

@@ -21,6 +21,7 @@ from hbt.conformance.corpus import (
     Fixture,
     IncompleteFixture,
     MisfiledInput,
+    NoCorpus,
     UnknownSidecar,
 )
 from hbt.conformance.normalize import Difference, NormalizationError, compare, compare_html, normalize
@@ -36,6 +37,7 @@ __all__ = [
     "Fixture",
     "IncompleteFixture",
     "MisfiledInput",
+    "NoCorpus",
     "NormalizationError",
     "Outcome",
     "Result",
