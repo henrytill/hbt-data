@@ -14,14 +14,18 @@ Fixtures live under `html/`, `markdown/`, `pinboard/json/` and `pinboard/xml/`, 
 python3 -m hbt.conformance --binary path/to/hbt
 ```
 
-Runs every fixture against one `hbt` executable and reports what does not conform:
+Runs every fixture against one `hbt` executable and reports what became of each:
 
 ```
 corpus 0523150 • 37 fixtures (9 html, 25 markdown, 3 pinboard) • 9 -t html, 37 -t yaml • binary result-hbt-go/bin/hbt
+ PASS  html/bookmarks_feeds
+ PASS  html/bookmarks_folders
+...
+ PASS  pinboard/xml/sample
 37 pass
 ```
 
-The header counts the fixtures the run selected, on both sides: the corpus directories say which parsers were exercised, and the `-t` formats say which formatters were — only the HTML fixtures pin `-t html`, so a total alone would not say that the HTML formatter went unchecked on the other 28 inputs.
+The header counts the fixtures the run selected, on both sides: the corpus directories say which parsers were exercised, and the `-t` formats say which formatters were — only the HTML fixtures pin `-t html`, so a total alone would not say that the HTML formatter went unchecked on the other 28 inputs. Every fixture is then named, passes included, the way the four suites this replaces all did; `-q` prints only what did not pass.
 
 Installed via the flake, the harness carries only the code — the fixtures are the other half of this repository and would rebuild the package every time one changed — so `nix run github:henrytill/hbt-data -- --binary … --corpus …` needs `--corpus` pointed at a checkout. Run from a checkout and it finds them itself.
 
@@ -32,7 +36,7 @@ Requires Python 3.11 and PyYAML, and nothing else — no Nix, no build step, no 
 | `--binary` | the executable to test (required) |
 | `filter…` | fixture names, substrings or globs; all fixtures if omitted |
 | `-l`, `--list` | list the selected fixtures and exit |
-| `-v`, `--verbose` | report passing fixtures too |
+| `-q`, `--quiet` | report only what did not pass |
 | `--waivers FILE` | fixture names this caller expects to fail |
 | `--corpus DIR` | test a corpus other than this checkout |
 | `--tz ZONE` | run under this timezone instead of the ambient one |

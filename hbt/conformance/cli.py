@@ -44,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--tz", default=None, help="run under this timezone instead of the ambient one")
     parser.add_argument("-j", "--jobs", type=int, default=8, help="fixtures to run at once")
     parser.add_argument("-l", "--list", action="store_true", help="list the selected fixtures and exit")
-    parser.add_argument("-v", "--verbose", action="store_true", help="report passing fixtures too")
+    parser.add_argument("-q", "--quiet", action="store_true", help="report only what did not pass")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("filter", nargs="*", help="fixture name, substring, or glob; all fixtures if omitted")
     return parser
@@ -75,10 +75,17 @@ def _header(corpus: Corpus, selected: Sequence[Fixture], binary: Path, tz: str |
     )
 
 
-def report(results: Sequence[Result], verbose: bool, out: TextIO) -> None:
-    """Print each result worth printing, with its differences beneath it."""
+def report(results: Sequence[Result], quiet: bool, out: TextIO) -> None:
+    """Print one line per fixture, with any differences beneath it.
+
+    Every fixture is named, passes included, because the four suites this
+    replaces all did: `cargo test`, `go test -v`, dune and tasty each said
+    which cases ran, and a harness that prints only a total moves "did my
+    fixture actually run?" back into a `--list` invocation.  `--quiet` is for
+    a caller that wants only what failed.
+    """
     for result in results:
-        if result.outcome is Outcome.PASS and not verbose:
+        if result.outcome is Outcome.PASS and quiet:
             continue
         label = result.outcome.value.upper()
         suffix = f" -- {result.reason}" if result.reason else ""
@@ -135,7 +142,7 @@ def main(argv: Sequence[str] | None = None, out: TextIO | None = None) -> int:
     waived = read_waivers(args.waivers) if args.waivers else {}
     print(_header(corpus, selected, args.binary, args.tz), file=stream)
     results = _run(selected, args, waived)
-    report(results, args.verbose, stream)
+    report(results, args.quiet, stream)
 
     counts = Counter(r.outcome for r in results)
     print(", ".join(f"{counts[o]} {o.value}" for o in Outcome if counts[o]), file=stream)
