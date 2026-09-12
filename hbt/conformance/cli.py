@@ -5,7 +5,6 @@ from __future__ import annotations
 import io
 import sys
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Sequence, TextIO, cast
@@ -14,7 +13,7 @@ import click
 
 from hbt.conformance import __version__
 from hbt.conformance.corpus import Corpus, CorpusError, Fixture, revision
-from hbt.conformance.runner import DEFAULT_TIMEOUT, Outcome, Result, check
+from hbt.conformance.runner import DEFAULT_TIMEOUT, Outcome, Result, check_all
 
 
 def read_waivers(path: Path) -> dict[str, str]:
@@ -137,21 +136,6 @@ def report(results: Sequence[Result], quiet: bool, out: TextIO) -> int:
     return len(rows)
 
 
-def _check_all(fixtures: Sequence[Fixture], options: Options, waived: dict[str, str]) -> list[Result]:
-    """Check every fixture, waiving the ones the caller expects to fail.
-
-    Threads rather than a sequential loop: nearly all of the time is spent
-    waiting on subprocesses.  `map` yields in submission order, so the report
-    stays deterministic without any sorting.
-    """
-
-    def run_one(fixture: Fixture) -> Result:
-        return check(fixture, options.binary, options.timeout, options.tz)
-
-    with ThreadPoolExecutor(max_workers=options.jobs) as pool:
-        return [r.waive(waived[r.fixture.name]) if r.fixture.name in waived else r for r in pool.map(run_one, fixtures)]
-
-
 def _utf8(stream: TextIO) -> TextIO:
     """``stream``, decoupled from the locale's encoding.
 
@@ -196,7 +180,7 @@ def run(options: Options, out: TextIO) -> int:
 
     waived = read_waivers(options.waivers) if options.waivers else {}
     print(_header(corpus, selected, options.binary, options.tz), file=out)
-    results = _check_all(selected, options, waived)
+    results = check_all(selected, options.binary, options.timeout, options.tz, options.jobs, waived)
     # Blank lines rather than a rule: the report is three blocks -- what ran,
     # what each fixture did, what it adds up to -- and a rule would be a
     # fourth thing for a filter to skip past.
@@ -287,5 +271,15 @@ def cli(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     FILTER selects fixtures by name, substring or glob; every fixture runs if
     none is given.
     """
-    options = Options(binary, corpus_root, waivers, timeout, tz, jobs, list_only, quiet, patterns)
+    options = Options(
+        binary=binary,
+        corpus=corpus_root,
+        waivers=waivers,
+        timeout=timeout,
+        tz=tz,
+        jobs=jobs,
+        list_only=list_only,
+        quiet=quiet,
+        patterns=patterns,
+    )
     ctx.exit(run(options, _utf8(sys.stdout)))
