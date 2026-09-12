@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Sequence
 
 INPUT_SUFFIX = ".input"
+EXPECTED_MARKER = ".expected."
 
 # Which input extensions each corpus directory holds.  The directory says
 # which parser a fixture is about, the extension is what actually selects one
@@ -91,6 +92,11 @@ class IncompleteFixture(CorpusError):
 
     ``.expected.error`` is the one way to say that an input is not meant to
     produce a document, and it says why.
+
+    The mirror image -- an expectation with no input -- is worse, because
+    discovery walks the inputs: the file is not a fixture that asserts too
+    little, it is a file nothing reads at all.  A renamed input leaves one
+    behind, and the corpus goes on passing with a case silently gone.
     """
 
 
@@ -140,6 +146,22 @@ class Fixture:
     def rejected(self) -> bool:
         """Whether every implementation must refuse this input."""
         return self.error is not None
+
+
+def _reject_orphans(root: Path, named: set[str]) -> None:
+    """Raise for any expectation that no input claims.
+
+    Discovery is driven by ``*.input.*``, so a sidecar whose input is gone or
+    was renamed is not read by anything and nothing says so -- the quiet half
+    of a half-fixture.  hbt-hs catches the same shape from the other
+    direction, refusing a stem that has one file of the pair.
+    """
+    for path in sorted(root.rglob("*.expected.*")):
+        if ".git" in path.parts:
+            continue
+        stem = path.parent / path.name[: path.name.index(EXPECTED_MARKER)]
+        if str(stem.relative_to(root)) not in named:
+            raise IncompleteFixture(f"{path.relative_to(root)}: no input is named {stem.name}")
 
 
 def _check_category(path: Path, category: str) -> None:
@@ -244,6 +266,7 @@ class Corpus:
                     ),
                 )
             )
+        _reject_orphans(root, set(inputs))
         return cls(root=root, fixtures=tuple(found))
 
     def select(self, patterns: list[str]) -> list[Fixture]:
