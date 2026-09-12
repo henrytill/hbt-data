@@ -19,6 +19,7 @@ from hbt.conformance.corpus import (
     Corpus,
     CorpusError,
     Fixture,
+    MisfiledInput,
     UnknownSidecar,
 )
 from hbt.conformance.normalize import Difference, NormalizationError, compare, compare_html, normalize
@@ -29,6 +30,7 @@ __all__ = [
     "Corpus",
     "Difference",
     "Fixture",
+    "MisfiledInput",
     "NormalizationError",
     "Outcome",
     "Result",
