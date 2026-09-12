@@ -106,22 +106,28 @@ class Refusals(unittest.TestCase):
 class HtmlComparison(unittest.TestCase):
     """The rendered bookmark file is held to byte equality, not to a data model."""
 
-    DOC = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<DL><p>\n</DL><p>\n"
+    DOC = b"<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<DL><p>\n</DL><p>\n"
 
     def test_identical_documents_match(self) -> None:
         self.assertEqual(compare_html(self.DOC, self.DOC), [])
 
     def test_a_trailing_newline_is_not_a_difference(self) -> None:
-        self.assertEqual(compare_html(self.DOC, self.DOC.rstrip("\n")), [])
+        self.assertEqual(compare_html(self.DOC, self.DOC.rstrip(b"\n")), [])
 
     def test_whitespace_is_a_difference(self) -> None:
-        self.assertEqual(len(compare_html(self.DOC, self.DOC.replace("<DL><p>", "  <DL><p>"))), 1)
+        self.assertEqual(len(compare_html(self.DOC, self.DOC.replace(b"<DL><p>", b"  <DL><p>"))), 1)
 
     def test_the_difference_is_reported_as_a_diff(self) -> None:
-        (difference,) = compare_html(self.DOC, self.DOC.replace("<DL><p>", "<DL>"))
+        (difference,) = compare_html(self.DOC, self.DOC.replace(b"<DL><p>", b"<DL>"))
         rendered = difference.render()
         self.assertIn("--- expected", rendered)
         self.assertIn("+++ actual", rendered)
+
+    def test_line_endings_are_a_difference_and_are_named_as_one(self) -> None:
+        """Text mode would have translated both sides into agreement."""
+        (difference,) = compare_html(self.DOC, self.DOC.replace(b"\n", b"\r\n"))
+        self.assertEqual(difference.expected, "LF line endings")
+        self.assertEqual(difference.actual, "CRLF line endings")
 
 
 class Reporting(unittest.TestCase):

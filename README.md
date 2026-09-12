@@ -77,7 +77,7 @@ A `<name>.expected.*` file in a format the harness does not check is an error, n
 
 For `-t yaml`, the contract is the YAML data model rather than the bytes, so scalar quoting is not a difference; `null`, the empty list and an absent key all mean absent; and nothing else is granted. A timestamp written as `'1700092800'` is a string, and a string is not an integer.
 
-For `-t html`, checked against the `.expected.html` beside each HTML fixture, the contract is byte equality modulo a trailing newline. The four render that file from the same template and agree exactly, so there is no house style to normalize away and any difference is a real one.
+For `-t html`, checked against the `.expected.html` beside each HTML fixture, the contract is byte equality modulo a trailing line terminator, compared as bytes so that a line-ending divergence cannot be translated away before the comparison sees it. The four render that file from the same template and agree exactly, so there is no house style to normalize away and any difference is a real one.
 
 Every implementation's own test suite compares *decoded structures* against the parsed expectation, which leaves the serialized form — the actual interoperability surface — checked by nobody. This harness checks it.
 
