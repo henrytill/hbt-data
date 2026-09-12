@@ -80,22 +80,42 @@ class Result:
         return self
 
 
-def _run(binary: Path, fixture: Fixture, to: str, timeout: float, tz: str | None) -> subprocess.CompletedProcess[str]:
+def _run(
+    binary: Path, fixture: Fixture, to: str, timeout: float, tz: str | None
+) -> subprocess.CompletedProcess[bytes]:
+    """Run the executable over one fixture, capturing its output undecoded."""
     return subprocess.run(
         [str(binary), "-t", to, str(fixture.input_path)],
         capture_output=True,
-        text=True,
         env=None if tz is None else dict(os.environ, TZ=tz),
         timeout=timeout,
         check=False,
     )
 
 
+def _decode(raw: bytes) -> str:
+    """The child's output as text, read as UTF-8 whatever the locale says.
+
+    Not ``text=True``, which decodes with the locale's encoding: under a
+    ``LANG``-less C locale that is ASCII, and four fixtures carry non-ASCII,
+    so the harness died with a ``UnicodeDecodeError`` raised inside
+    ``subprocess`` -- before any comparison, and outside the handlers here, so
+    one unrepresentable byte aborted the whole run.  The expectations are read
+    with an explicit encoding for the same reason: both sides of a comparison
+    have to agree on what the bytes mean, and the corpus is UTF-8.
+
+    ``errors="replace"`` rather than a raise, because output this harness
+    cannot decode is a conformance failure of the implementation that wrote
+    it, and it should be reported as a difference like any other.
+    """
+    return raw.decode("utf-8", errors="replace")
+
+
 def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: str | None = None) -> Result:
     """Run one fixture in every format it pins, and say whether it conformed."""
     formats = sorted(fixture.expected) or ["yaml"]
 
-    runs: dict[str, subprocess.CompletedProcess[str]] = {}
+    runs: dict[str, subprocess.CompletedProcess[bytes]] = {}
     for fmt in formats:
         try:
             runs[fmt] = _run(binary, fixture, fmt, timeout, tz)
@@ -123,7 +143,7 @@ def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: 
             continue
         expected = fixture.expected[fmt].read_text(encoding="utf-8")
         try:
-            found = COMPARATORS[fmt](expected, proc.stdout)
+            found = COMPARATORS[fmt](expected, _decode(proc.stdout))
         except (NormalizationError, yaml.YAMLError) as exc:
             failed.append(fmt)
             differences.append(Difference(f"$({fmt})", "a Collection", str(exc)))
@@ -137,7 +157,7 @@ def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: 
     return Result(fixture, Outcome.PASS)
 
 
-def _check_rejected(fixture: Fixture, runs: dict[str, subprocess.CompletedProcess[str]]) -> Result:
+def _check_rejected(fixture: Fixture, runs: dict[str, subprocess.CompletedProcess[bytes]]) -> Result:
     """A fixture whose input every implementation must refuse."""
     accepted = sorted(fmt for fmt, proc in runs.items() if proc.returncode == 0)
     if accepted:
@@ -151,7 +171,7 @@ def _summarize(failed: list[str], differences: list[Difference]) -> str:
     return f"{len(differences)} difference(s) in {formats}"
 
 
-def _stderr(proc: subprocess.CompletedProcess[str]) -> str:
-    message = proc.stderr.strip().splitlines()
+def _stderr(proc: subprocess.CompletedProcess[bytes]) -> str:
+    message = _decode(proc.stderr).strip().splitlines()
     detail = message[0] if message else "no diagnostic on stderr"
     return f"exited {proc.returncode}: {detail}"
