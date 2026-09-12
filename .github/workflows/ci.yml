@@ -1,0 +1,91 @@
+name: CI
+
+# This repository is the executable specification four implementations are
+# held to, and the harness that holds them to it is the only code here. So CI
+# checks the harness itself; what it cannot check is conformance, which needs
+# an `hbt` executable and belongs to each implementation's own CI.
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nix:
+    name: Nix (check and build)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+      - uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
+      - run: nix flake check -L
+      # The package's checkPhase is the test suite, so this runs it in the
+      # sandbox as the four implementations will when they build the harness
+      # from their own flakes.
+      - run: nix build -L .#hbt-conformance --no-link
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+      - uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
+      # One shell entry for all of them: entering it is most of the cost, and
+      # these are the same tools the README tells a contributor to run.
+      - run: |
+          nix develop --command bash -euo pipefail -c '
+            black --check hbt tests
+            isort --check-only hbt tests
+            flake8 hbt tests
+            pylint hbt tests
+            pyright hbt tests
+            nixfmt --check flake.nix
+          '
+
+  portable:
+    name: Python ${{ matrix.python }} (no Nix, C locale)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor pyproject declares, and the current release. The harness
+        # is vendored into four repositories and run from whatever Python is
+        # to hand, so the floor is a promise rather than an aspiration.
+        python: ["3.11", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      # PyYAML and nothing else: the README promises the harness runs from a
+      # bare checkout with no Nix, no build step and no environment, and this
+      # job is what keeps that true.
+      - run: python -m pip install pyyaml
+      # Under the C locale, which is what a LANG-less container gives you and
+      # what two decoding bugs hid behind: text-mode pipes and stdout both
+      # default to ASCII there, and four fixtures are not ASCII.
+      - run: python -m unittest discover -s tests -t .
+        env:
+          LC_ALL: C
+          LANG: C
+          PYTHONUTF8: "0"
