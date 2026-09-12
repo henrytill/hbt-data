@@ -23,7 +23,6 @@ dev = [
     "pylint>=3.3.4",
     "types-PyYAML>=6.0",
 ]
-test = []
 
 [project.scripts]
 hbt-conformance = "hbt.conformance.cli:main"
