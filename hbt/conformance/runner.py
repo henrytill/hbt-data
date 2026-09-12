@@ -80,9 +80,7 @@ class Result:
         return self
 
 
-def _run(
-    binary: Path, fixture: Fixture, to: str, timeout: float, tz: str | None
-) -> subprocess.CompletedProcess[bytes]:
+def _run(binary: Path, fixture: Fixture, to: str, timeout: float, tz: str | None) -> subprocess.CompletedProcess[bytes]:
     """Run the executable over one fixture, capturing its output undecoded."""
     return subprocess.run(
         [str(binary), "-t", to, str(fixture.input_path)],

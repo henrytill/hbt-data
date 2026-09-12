@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import io
 import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Sequence, TextIO
+from typing import Sequence, TextIO, cast
 
 from hbt.conformance import __version__
 from hbt.conformance.corpus import Corpus, Fixture, UnknownSidecar, categories, coverage, revision
@@ -113,10 +114,29 @@ def _run(fixtures: list[Fixture], args: argparse.Namespace, waived: dict[str, st
         return [r.waive(waived[r.fixture.name]) if r.fixture.name in waived else r for r in pool.map(run_one, fixtures)]
 
 
+def _utf8(stream: TextIO) -> TextIO:
+    """``stream``, decoupled from the locale's encoding.
+
+    Everything printed here is UTF-8 by construction -- the header's
+    separators, and the fixture content quoted in a difference -- while a
+    ``LANG``-less C locale gives stdout the ASCII codec.  Printing the header
+    then raised ``UnicodeEncodeError`` before a single fixture ran, so a bare
+    CI runner got a traceback instead of a conformance result.  Reconfiguring
+    is preferred to spelling the report in ASCII: a difference quotes whatever
+    the corpus and the implementation contain, which no amount of restraint
+    here keeps to ASCII.
+    """
+    if isinstance(stream, io.TextIOWrapper) and (stream.encoding or "").lower().replace("-", "") != "utf8":
+        stream.reconfigure(encoding="utf-8", errors="replace")
+    # isinstance() narrows to TextIOWrapper[Unknown], which pyright will not
+    # widen back to the declared return type on its own.
+    return cast(TextIO, stream)
+
+
 def main(argv: Sequence[str] | None = None, out: TextIO | None = None) -> int:
     """Run the selected fixtures; 0 if every one of them conformed."""
     args = build_parser().parse_args(argv)
-    stream: TextIO = out if out is not None else sys.stdout
+    stream: TextIO = out if out is not None else _utf8(sys.stdout)
 
     try:
         corpus = Corpus.discover(args.corpus)
