@@ -79,6 +79,21 @@ class UnknownSidecar(CorpusError):
     """
 
 
+class IncompleteFixture(CorpusError):
+    """A fixture that is only half present.
+
+    An input with no expectation beside it is not a weaker fixture, it is a
+    fixture that asserts nothing: the harness would run the parser and check
+    only that it exited zero, which every implementation does for inputs
+    nobody has ever looked at.  hbt-hs refuses the same shape, on the grounds
+    that the missing half "would have been compared against the empty
+    string".
+
+    ``.expected.error`` is the one way to say that an input is not meant to
+    produce a document, and it says why.
+    """
+
+
 class MisfiledInput(CorpusError):
     """An input in a directory that does not hold inputs of its kind.
 
@@ -115,8 +130,8 @@ class Fixture:
 
     name: str
     input_path: Path
-    #: Output format -> the file its output must match.  Empty for a fixture
-    #: that only asserts that the input parses at all.
+    #: Output format -> the file its output must match.  Empty only for a
+    #: fixture whose input must be refused, which pins no output.
     expected: dict[str, Path]
     #: The reason the input must be refused, or ``None`` if it must parse.
     error: str | None
@@ -208,6 +223,9 @@ class Corpus:
 
             error_path = sidecars.get(ERROR_SUFFIX)
             outputs = {fmt: sidecars[suffix] for fmt, suffix in EXPECTED_SUFFIXES.items() if suffix in sidecars}
+            if error_path is None and not outputs:
+                expectations = ", ".join(stem.name + suffix for suffix in sorted(RECOGNIZED_SUFFIXES))
+                raise IncompleteFixture(f"{name}: {path.name} has nothing beside it -- expected one of {expectations}")
             if error_path is not None and outputs:
                 names = ", ".join(sorted(path.name for path in outputs.values()))
                 raise ContradictoryExpectations(

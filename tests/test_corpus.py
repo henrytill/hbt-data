@@ -20,6 +20,7 @@ from hbt.conformance.corpus import (
     CollidingInputs,
     ContradictoryExpectations,
     Corpus,
+    IncompleteFixture,
     MisfiledInput,
     UnknownSidecar,
     categories,
@@ -44,12 +45,6 @@ class Discovery(unittest.TestCase):
         self.assertEqual(sorted(fixture.expected), ["html", "yaml"])
         self.assertFalse(fixture.rejected)
 
-    def test_a_fixture_may_pin_no_output_at_all(self) -> None:
-        self.write("markdown/a.input.md")
-        (fixture,) = Corpus.discover(self.root).fixtures
-        self.assertEqual(fixture.expected, {})
-        self.assertIsNone(fixture.error)
-
     def test_an_error_file_makes_the_fixture_a_rejection(self) -> None:
         self.write("markdown/a.input.md")
         self.write("markdown/a.expected.error", "missing-date\n")
@@ -63,6 +58,18 @@ class Discovery(unittest.TestCase):
         self.write("markdown/a.expected.yml")
         with self.assertRaisesRegex(UnknownSidecar, "a.expected.yml"):
             Corpus.discover(self.root)
+
+    def test_an_input_with_no_expectation_is_an_error(self) -> None:
+        """Otherwise the fixture asserts only that the parser exited zero."""
+        self.write("markdown/a.input.md")
+        with self.assertRaisesRegex(IncompleteFixture, "a.input.md"):
+            Corpus.discover(self.root)
+
+    def test_a_rejection_fixture_needs_no_output_expectation(self) -> None:
+        self.write("markdown/a.input.md")
+        self.write("markdown/a.expected.error", "missing-date\n")
+        (fixture,) = Corpus.discover(self.root).fixtures
+        self.assertTrue(fixture.rejected)
 
     def test_an_input_must_match_the_category_holding_it(self) -> None:
         """The extension picks the parser; the directory picks the column."""
@@ -126,18 +133,21 @@ class Discovery(unittest.TestCase):
 
     def test_categories_count_top_level_directories(self) -> None:
         """pinboard/xml and pinboard/json are one parser, so one category."""
-        self.write("markdown/a.input.md")
-        self.write("pinboard/xml/b.input.xml")
-        self.write("pinboard/json/c.input.json")
+        for name in ("markdown/a.md", "pinboard/xml/b.xml", "pinboard/json/c.json"):
+            stem, _, extension = name.rpartition(".")
+            self.write(f"{stem}.input.{extension}")
+            self.write(f"{stem}.expected.yaml")
         self.assertEqual(categories(Corpus.discover(self.root).fixtures), {"markdown": 1, "pinboard": 2})
 
     def test_a_sidecar_does_not_leak_between_fixtures_sharing_a_prefix(self) -> None:
         self.write("markdown/a.input.md")
+        self.write("markdown/a.expected.yaml")
         self.write("markdown/a_long.input.md")
         self.write("markdown/a_long.expected.yaml")
+        self.write("markdown/a_long.expected.html")
         by_name = {f.name: f for f in Corpus.discover(self.root).fixtures}
-        self.assertEqual(by_name["markdown/a"].expected, {})
-        self.assertEqual(sorted(by_name["markdown/a_long"].expected), ["yaml"])
+        self.assertEqual(sorted(by_name["markdown/a"].expected), ["yaml"])
+        self.assertEqual(sorted(by_name["markdown/a_long"].expected), ["html", "yaml"])
 
 
 class Selection(unittest.TestCase):
@@ -146,7 +156,8 @@ class Selection(unittest.TestCase):
         for category, extension in (("markdown", "md"), ("html", "html")):
             (self.root / category).mkdir()
             for name in ("basic", "nested"):
-                (self.root / category / f"{name}.input.{extension}").write_text("", encoding="utf-8")
+                for sidecar in (f"input.{extension}", "expected.yaml"):
+                    (self.root / category / f"{name}.{sidecar}").write_text("", encoding="utf-8")
         self.corpus = Corpus.discover(self.root)
 
     def names(self, *patterns: str) -> list[str]:
