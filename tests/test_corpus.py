@@ -13,11 +13,14 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from hbt.conformance.corpus import (
+    CATEGORIES,
     CollidingInputs,
     ContradictoryExpectations,
     Corpus,
+    MisfiledInput,
     UnknownSidecar,
     categories,
     coverage,
@@ -61,13 +64,32 @@ class Discovery(unittest.TestCase):
         with self.assertRaisesRegex(UnknownSidecar, "a.expected.yml"):
             Corpus.discover(self.root)
 
+    def test_an_input_must_match_the_category_holding_it(self) -> None:
+        """The extension picks the parser; the directory picks the column."""
+        self.write("markdown/a.input.json")
+        self.write("markdown/a.expected.yaml")
+        with self.assertRaisesRegex(MisfiledInput, "holds .md inputs"):
+            Corpus.discover(self.root)
+
+    def test_an_input_outside_every_category_is_an_error(self) -> None:
+        self.write("notes/a.input.md")
+        self.write("notes/a.expected.yaml")
+        with self.assertRaisesRegex(MisfiledInput, "not a corpus category"):
+            Corpus.discover(self.root)
+
     def test_two_inputs_may_not_share_one_name(self) -> None:
-        """One name for two cases makes a waiver and a failure ambiguous."""
+        """One name for two cases makes a waiver and a failure ambiguous.
+
+        No category takes two extensions today, so the collision is only
+        reachable through one that does -- the guard outlives the arithmetic
+        that currently makes it unreachable.
+        """
         self.write("markdown/a.input.md")
         self.write("markdown/a.input.html")
         self.write("markdown/a.expected.yaml")
-        with self.assertRaisesRegex(CollidingInputs, "markdown/a"):
-            Corpus.discover(self.root)
+        with patch.dict(CATEGORIES, {"markdown": frozenset({".md", ".html"})}):
+            with self.assertRaisesRegex(CollidingInputs, "markdown/a"):
+                Corpus.discover(self.root)
 
     def test_a_rejection_fixture_may_not_also_pin_an_output(self) -> None:
         """The rejection is checked first, so the expectation is never read."""
@@ -121,10 +143,10 @@ class Discovery(unittest.TestCase):
 class Selection(unittest.TestCase):
     def setUp(self) -> None:
         self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
-        for category in ("markdown", "html"):
+        for category, extension in (("markdown", "md"), ("html", "html")):
             (self.root / category).mkdir()
             for name in ("basic", "nested"):
-                (self.root / category / f"{name}.input.txt").write_text("", encoding="utf-8")
+                (self.root / category / f"{name}.input.{extension}").write_text("", encoding="utf-8")
         self.corpus = Corpus.discover(self.root)
 
     def names(self, *patterns: str) -> list[str]:

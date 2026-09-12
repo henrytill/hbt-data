@@ -26,6 +26,23 @@ from typing import Sequence
 
 INPUT_SUFFIX = ".input"
 
+# Which input extensions each corpus directory holds.  The directory says
+# which parser a fixture is about, the extension is what actually selects one
+# -- the harness passes no `-f`, so the filename decides -- and a fixture
+# filed under the wrong directory silently runs under some other parser and is
+# counted in the wrong column of the report.
+#
+# hbt-ocaml states this pairing as `input_to_dir`/`format_to_ext` and hbt-hs
+# as `categoryDir`/`formatExt`; both refuse a file that does not match.  This
+# harness inferred the category from whatever was on disk, which is how a
+# pinboard input under markdown/ passed as a markdown fixture.
+CATEGORIES: dict[str, frozenset[str]] = {
+    "html": frozenset({".html"}),
+    "markdown": frozenset({".md"}),
+    "pinboard/json": frozenset({".json"}),
+    "pinboard/xml": frozenset({".xml"}),
+}
+
 # An expectation is keyed by the `-t` format that produces it.  Every fixture
 # pins `-t yaml`; only the nine HTML fixtures pin `-t html`, which is a second
 # output format and a second way for the four to diverge.  A third format would
@@ -59,6 +76,16 @@ class UnknownSidecar(CorpusError):
     Almost always a typo or a format whose support was never added.  Reported
     rather than ignored, because the alternative is a fixture that silently
     checks less than the file sitting next to it implies.
+    """
+
+
+class MisfiledInput(CorpusError):
+    """An input in a directory that does not hold inputs of its kind.
+
+    Either the directory is not a category at all, or the category does not
+    take that extension.  Neither can be honoured by guessing: the extension
+    picks the parser and the directory picks the column of the report, so a
+    mismatch is two different claims about one file.
     """
 
 
@@ -98,6 +125,18 @@ class Fixture:
     def rejected(self) -> bool:
         """Whether every implementation must refuse this input."""
         return self.error is not None
+
+
+def _check_category(path: Path, category: str) -> None:
+    """Raise unless ``path`` is an input the directory holding it takes."""
+    extensions = CATEGORIES.get(category)
+    if extensions is None:
+        known = ", ".join(sorted(CATEGORIES))
+        raise MisfiledInput(f"{path.name} is in {category}, which is not a corpus category ({known})")
+    suffix = path.suffix
+    if suffix not in extensions:
+        takes = ", ".join(sorted(extensions))
+        raise MisfiledInput(f"{path.name} is in {category}, which holds {takes} inputs")
 
 
 def _root() -> Path:
@@ -156,6 +195,7 @@ class Corpus:
                 continue
             stem = path.parent / path.name[: path.name.index(INPUT_SUFFIX)]
             name = str(stem.relative_to(root))
+            _check_category(path, str(path.parent.relative_to(root)))
             first = inputs.setdefault(name, path)
             if first != path:
                 raise CollidingInputs(f"{name}: {first.name} and {path.name} are two fixtures with one name")
