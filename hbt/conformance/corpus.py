@@ -18,13 +18,14 @@ quietly asserts less than its author thought.
 from __future__ import annotations
 
 import fnmatch
-import glob
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
 INPUT_SUFFIX = ".input"
+INPUT_MARKER = f"{INPUT_SUFFIX}."
 EXPECTED_MARKER = ".expected."
 
 # Which input extensions each corpus directory holds.  The directory says
@@ -81,7 +82,7 @@ class UnknownSidecar(CorpusError):
 
 
 class IncompleteFixture(CorpusError):
-    """A fixture that is only half present.
+    """A fixture that is only half present, read from either end.
 
     An input with no expectation beside it is not a weaker fixture, it is a
     fixture that asserts nothing: the harness would run the parser and check
@@ -93,10 +94,10 @@ class IncompleteFixture(CorpusError):
     ``.expected.error`` is the one way to say that an input is not meant to
     produce a document, and it says why.
 
-    The mirror image -- an expectation with no input -- is worse, because
-    discovery walks the inputs: the file is not a fixture that asserts too
-    little, it is a file nothing reads at all.  A renamed input leaves one
-    behind, and the corpus goes on passing with a case silently gone.
+    The mirror image is an expectation with no input: not a fixture that
+    asserts too little, but a file nothing reads at all.  A renamed input
+    leaves one behind, and the corpus goes on passing with a case silently
+    gone.  Grouping by stem sees both as one condition.
     """
 
 
@@ -157,22 +158,6 @@ class Fixture:
         return tuple(pinned or ([self.error_path] if self.error_path is not None else []))
 
 
-def _reject_orphans(root: Path, named: set[str]) -> None:
-    """Raise for any expectation that no input claims.
-
-    Discovery is driven by ``*.input.*``, so a sidecar whose input is gone or
-    was renamed is not read by anything and nothing says so -- the quiet half
-    of a half-fixture.  hbt-hs catches the same shape from the other
-    direction, refusing a stem that has one file of the pair.
-    """
-    for path in sorted(root.rglob("*.expected.*")):
-        if ".git" in path.parts:
-            continue
-        stem = path.parent / path.name[: path.name.index(EXPECTED_MARKER)]
-        if str(stem.relative_to(root)) not in named:
-            raise IncompleteFixture(f"{path.relative_to(root)}: no input is named {stem.name}")
-
-
 def _check_category(path: Path, category: str) -> None:
     """Raise unless ``path`` is an input the directory holding it takes."""
     extensions = CATEGORIES.get(category)
@@ -205,18 +190,94 @@ def revision(root: Path | None = None) -> str:
     return proc.stdout.strip() if proc.returncode == 0 else "unknown"
 
 
-def _sidecars(stem: Path) -> dict[str, Path]:
-    """Every ``<stem>.expected.*`` beside a fixture, keyed by its suffix.
+@dataclass(frozen=True)
+class _Group:
+    """Every file sharing one directory and one stem.
 
-    The stem is escaped before it goes into the pattern: a fixture named
-    ``a[1]`` would otherwise be read as a character class, match nothing, and
-    discover as a fixture with no expectations at all -- asserting only that
-    the input parses, with no UnknownSidecar to say so.  Corpus names are all
-    ``[a-z_]`` today, so this is latent, and it fails in exactly the quiet way
-    this module refuses to fail elsewhere.
+    Discovery groups first and validates second, which is what makes the
+    rules about a fixture's files fall out of one pass: an input with no
+    expectation and an expectation with no input are the same condition read
+    from either end, and two inputs with one stem are visible without asking
+    the filesystem a second question.  Globbing a stem back at the directory
+    -- the shape this replaces -- could see neither, and had to escape the
+    stem in case a name contained a metacharacter.
     """
-    prefix = f"{stem.name}.expected."
-    return {path.name[len(stem.name) :]: path for path in stem.parent.glob(glob.escape(prefix) + "*")}
+
+    name: str
+    directory: Path
+    inputs: list[Path]
+    sidecars: dict[str, Path]
+
+
+def _walk(root: Path) -> dict[tuple[Path, str], _Group]:
+    """Every corpus file under ``root``, bucketed by the fixture it belongs to.
+
+    ``.git`` is pruned rather than filtered, so the walk does not descend a
+    packed object store to throw the results away.  A file matching neither
+    marker is not a corpus file and is ignored: this walks a repository that
+    also holds the harness, its tests and its flake.
+    """
+    groups: dict[tuple[Path, str], _Group] = {}
+    for directory, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d != ".git"]
+        parent = Path(directory)
+        for filename in filenames:
+            if INPUT_MARKER in filename:
+                stem, kind = filename[: filename.index(INPUT_MARKER)], INPUT_MARKER
+            elif EXPECTED_MARKER in filename:
+                stem, kind = filename[: filename.index(EXPECTED_MARKER)], EXPECTED_MARKER
+            else:
+                continue
+            key = (parent, stem)
+            group = groups.get(key)
+            if group is None:
+                name = str((parent / stem).relative_to(root))
+                group = groups[key] = _Group(name, parent, [], {})
+            if kind is INPUT_MARKER:
+                group.inputs.append(parent / filename)
+            else:
+                group.sidecars[filename[len(stem) :]] = parent / filename
+    return groups
+
+
+def _fixture(group: _Group, root: Path) -> Fixture:
+    """The fixture ``group`` describes, or the reason it is not one.
+
+    One invariant, stated once: a fixture is exactly one input whose
+    extension its directory takes, beside a non-empty and non-contradictory
+    set of recognized expectations.  Every way of failing it is a way of
+    asserting less than the files imply, which is what this module refuses to
+    do quietly -- there is no manifest to check the filenames against, so the
+    filenames have to check each other.
+    """
+    if not group.inputs:
+        named = ", ".join(sorted(path.name for path in group.sidecars.values()))
+        raise IncompleteFixture(f"{group.name}: {named} has no input beside it")
+    if len(group.inputs) > 1:
+        both = " and ".join(sorted(path.name for path in group.inputs))
+        raise CollidingInputs(f"{group.name}: {both} are two fixtures with one name")
+    (path,) = group.inputs
+    _check_category(path, str(group.directory.relative_to(root)))
+
+    unknown = sorted(set(group.sidecars) - RECOGNIZED_SUFFIXES)
+    if unknown:
+        named = ", ".join(sorted(group.sidecars[suffix].name for suffix in unknown))
+        raise UnknownSidecar(f"{group.name}: no output format claims {named}")
+
+    error_path = group.sidecars.get(ERROR_SUFFIX)
+    outputs = {fmt: group.sidecars[suffix] for fmt, suffix in EXPECTED_SUFFIXES.items() if suffix in group.sidecars}
+    if error_path is None and not outputs:
+        stem = group.name.rsplit("/", 1)[-1]
+        expected = ", ".join(stem + suffix for suffix in sorted(RECOGNIZED_SUFFIXES))
+        raise IncompleteFixture(f"{group.name}: {path.name} has nothing beside it -- expected one of {expected}")
+    if error_path is not None and outputs:
+        named = ", ".join(sorted(p.name for p in outputs.values()))
+        raise ContradictoryExpectations(
+            f"{group.name}: {error_path.name} says the input is refused, but {named} says what it parses to"
+        )
+
+    error = None if error_path is None else error_path.read_text(encoding="utf-8").strip() or "(no reason given)"
+    return Fixture(name=group.name, input_path=path, expected=outputs, error=error, error_path=error_path)
 
 
 @dataclass(frozen=True)
@@ -234,50 +295,8 @@ class Corpus:
         a format the harness does not know how to check.
         """
         root = (root or _root()).resolve()
-        found: list[Fixture] = []
-        inputs: dict[str, Path] = {}
-        for path in sorted(root.rglob(f"*{INPUT_SUFFIX}.*")):
-            if ".git" in path.parts:
-                continue
-            stem = path.parent / path.name[: path.name.index(INPUT_SUFFIX)]
-            name = str(stem.relative_to(root))
-            _check_category(path, str(path.parent.relative_to(root)))
-            first = inputs.setdefault(name, path)
-            if first != path:
-                raise CollidingInputs(f"{name}: {first.name} and {path.name} are two fixtures with one name")
-            sidecars = _sidecars(stem)
-
-            unknown = sorted(set(sidecars) - RECOGNIZED_SUFFIXES)
-            if unknown:
-                names = ", ".join(stem.name + suffix for suffix in unknown)
-                raise UnknownSidecar(f"{stem.parent.relative_to(root)}: no output format claims {names}")
-
-            error_path = sidecars.get(ERROR_SUFFIX)
-            outputs = {fmt: sidecars[suffix] for fmt, suffix in EXPECTED_SUFFIXES.items() if suffix in sidecars}
-            if error_path is None and not outputs:
-                expectations = ", ".join(stem.name + suffix for suffix in sorted(RECOGNIZED_SUFFIXES))
-                raise IncompleteFixture(f"{name}: {path.name} has nothing beside it -- expected one of {expectations}")
-            if error_path is not None and outputs:
-                names = ", ".join(sorted(path.name for path in outputs.values()))
-                raise ContradictoryExpectations(
-                    f"{stem.parent.relative_to(root)}: {error_path.name} says the input is refused,"
-                    f" but {names} says what it parses to"
-                )
-            found.append(
-                Fixture(
-                    name=name,
-                    input_path=path,
-                    expected=outputs,
-                    error=(
-                        error_path.read_text(encoding="utf-8").strip() or "(no reason given)"
-                        if error_path is not None
-                        else None
-                    ),
-                    error_path=error_path,
-                )
-            )
-        _reject_orphans(root, set(inputs))
-        return cls(root=root, fixtures=tuple(found))
+        groups = _walk(root)
+        return cls(root=root, fixtures=tuple(_fixture(group, root) for _, group in sorted(groups.items())))
 
     def select(self, patterns: list[str]) -> list[Fixture]:
         """Fixtures whose name matches any of ``patterns``.
