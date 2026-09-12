@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Sequence, TextIO
 
 from hbt.conformance import __version__
-from hbt.conformance.corpus import Corpus, Fixture, UnknownSidecar, revision
+from hbt.conformance.corpus import Corpus, Fixture, UnknownSidecar, categories, coverage, revision
 from hbt.conformance.runner import DEFAULT_TIMEOUT, Outcome, Result, check
 
 
@@ -50,17 +50,29 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _header(corpus: Corpus, selected: int, binary: Path, tz: str | None) -> str:
+def _header(corpus: Corpus, selected: Sequence[Fixture], binary: Path, tz: str | None) -> str:
     """The one line that says what is being checked, and against what.
 
-    Coverage is stated rather than left implicit: only the HTML fixtures pin
-    `-t html`, so "37 pass" alone would not say that the HTML formatter went
-    unchecked on the other 28 inputs.  The corpus revision is here because a
-    stale pin otherwise surfaces as dozens of opaque failures.
+    Both halves of the coverage are stated rather than left implicit.  The
+    corpus directories say which parsers were exercised -- a run reporting
+    only "9 html, 37 yaml" reads as though the markdown and pinboard fixtures
+    never ran -- and the output formats say which formatters were, since only
+    the HTML fixtures pin `-t html` and "37 pass" alone would not say that the
+    HTML formatter went unchecked on the other 28 inputs.
+
+    Counted over the selected fixtures, not the corpus: a run filtered down to
+    one markdown case has not checked nine HTML expectations, and saying it
+    had was the more misleading half of the old line.  The corpus revision is
+    here because a stale pin otherwise surfaces as dozens of opaque failures.
     """
-    coverage = ", ".join(f"{n} {fmt}" for fmt, n in sorted(corpus.coverage().items()) if n)
+    inputs = ", ".join(f"{n} {category}" for category, n in sorted(categories(selected).items()))
+    formats = ", ".join(f"{n} -t {fmt}" for fmt, n in sorted(coverage(selected).items()) if n)
     zone = f" \u2022 TZ={tz}" if tz else ""
-    return f"corpus {revision(corpus.root)} \u2022 {selected} fixture(s) ({coverage}) \u2022 binary {binary}{zone}"
+    plural = "" if len(selected) == 1 else "s"
+    return (
+        f"corpus {revision(corpus.root)} \u2022 {len(selected)} fixture{plural} ({inputs})"
+        f" \u2022 {formats} \u2022 binary {binary}{zone}"
+    )
 
 
 def report(results: Sequence[Result], verbose: bool, out: TextIO) -> None:
@@ -121,7 +133,7 @@ def main(argv: Sequence[str] | None = None, out: TextIO | None = None) -> int:
         return 2
 
     waived = read_waivers(args.waivers) if args.waivers else {}
-    print(_header(corpus, len(selected), args.binary, args.tz), file=stream)
+    print(_header(corpus, selected, args.binary, args.tz), file=stream)
     results = _run(selected, args, waived)
     report(results, args.verbose, stream)
 

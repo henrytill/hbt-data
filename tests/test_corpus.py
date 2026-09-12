@@ -14,16 +14,17 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from hbt.conformance.corpus import Corpus, UnknownSidecar
+from hbt.conformance.corpus import Corpus, UnknownSidecar, categories, coverage
 
 
 class Discovery(unittest.TestCase):
     def setUp(self) -> None:
         self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
-        (self.root / "markdown").mkdir()
 
     def write(self, name: str, content: str = "") -> None:
-        (self.root / name).write_text(content, encoding="utf-8")
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
 
     def test_expectations_are_keyed_by_output_format(self) -> None:
         self.write("markdown/a.input.md")
@@ -59,7 +60,24 @@ class Discovery(unittest.TestCase):
         self.write("markdown/b.input.md")
         self.write("markdown/b.expected.yaml")
         self.write("markdown/b.expected.html")
-        self.assertEqual(Corpus.discover(self.root).coverage(), {"yaml": 2, "html": 1})
+        self.assertEqual(coverage(Corpus.discover(self.root).fixtures), {"yaml": 2, "html": 1})
+
+    def test_coverage_counts_the_fixtures_it_is_given_not_the_corpus(self) -> None:
+        """The header reports a run, and a filtered run checked less."""
+        self.write("markdown/a.input.md")
+        self.write("markdown/a.expected.yaml")
+        self.write("html/b.input.html")
+        self.write("html/b.expected.yaml")
+        self.write("html/b.expected.html")
+        corpus = Corpus.discover(self.root)
+        self.assertEqual(coverage(corpus.select(["markdown/*"])), {"yaml": 1, "html": 0})
+
+    def test_categories_count_top_level_directories(self) -> None:
+        """pinboard/xml and pinboard/json are one parser, so one category."""
+        self.write("markdown/a.input.md")
+        self.write("pinboard/xml/b.input.xml")
+        self.write("pinboard/json/c.input.json")
+        self.assertEqual(categories(Corpus.discover(self.root).fixtures), {"markdown": 1, "pinboard": 2})
 
     def test_a_sidecar_does_not_leak_between_fixtures_sharing_a_prefix(self) -> None:
         self.write("markdown/a.input.md")
