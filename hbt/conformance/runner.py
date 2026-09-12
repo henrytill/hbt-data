@@ -27,30 +27,40 @@ import os
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 import yaml
 
 from hbt.conformance.corpus import Fixture
-from hbt.conformance.normalize import Difference, NormalizationError, compare, compare_html, normalize
+from hbt.conformance.normalize import Difference, NormalizationError, compare_html, diff, normalize
 from hbt.conformance.yaml_io import load_yaml
 
 DEFAULT_TIMEOUT = 30.0
 
-#: How each output format's bytes are compared against its expectation.  The
-#: two rules differ deliberately -- see :mod:`hbt.conformance.normalize`.
-COMPARATORS: dict[str, Callable[[bytes, bytes], list[Difference]]] = {
-    "yaml": lambda expected, actual: compare(load_yaml(_decode(expected)), load_yaml(_decode(actual))),
-    "html": compare_html,
-}
+
+@dataclass(frozen=True)
+class Format:
+    """How one output format's bytes are read, and how two of them differ.
+
+    One record rather than a table per operation: reading an expectation on
+    its own -- so that a corpus file which is not what it claims is reported
+    against the corpus -- and comparing two documents are the same knowledge
+    about one format, and a third format should be one entry rather than an
+    entry in each of two dicts.
+
+    The two formats differ in what ``parse`` means, deliberately.  For YAML
+    it is the data model, so quoting and key order are not differences; for
+    HTML it is the bytes themselves, which is why ``parse`` is identity there
+    rather than vacuous.  See :mod:`hbt.conformance.normalize`.
+    """
+
+    parse: Callable[[bytes], Any]
+    diff: Callable[[Any, Any], list[Difference]]
 
 
-#: How each output format's expectation is read on its own, so that a corpus
-#: file which is not what it claims to be is reported against the corpus
-#: rather than against whichever implementation happened to be running.
-VALIDATORS: dict[str, Callable[[bytes], object]] = {
-    "yaml": lambda raw: normalize(load_yaml(_decode(raw))),
-    "html": lambda raw: raw,
+FORMATS: dict[str, Format] = {
+    "yaml": Format(parse=lambda raw: normalize(load_yaml(_decode(raw))), diff=diff),
+    "html": Format(parse=lambda raw: raw, diff=compare_html),
 }
 
 
@@ -137,10 +147,28 @@ def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: 
     if fixture.rejected:
         return _check_rejected(fixture, runs)
 
-    # Every format is compared, even after one of them has already failed: a
-    # run that stops at the first bad format cannot say whether the others
-    # diverged too, which is the question a conformance report exists to
-    # answer.
+    differences, failed, corpus_errors = _compare(fixture, formats, runs)
+    if corpus_errors:
+        return Result(fixture, Outcome.FAIL, f"corpus error: {', '.join(corpus_errors)}", tuple(differences))
+    if differences:
+        return Result(fixture, Outcome.FAIL, _summarize(failed, differences), tuple(differences))
+    return Result(fixture, Outcome.PASS)
+
+
+def _compare(
+    fixture: Fixture, formats: list[str], runs: dict[str, subprocess.CompletedProcess[bytes]]
+) -> tuple[list[Difference], list[str], list[str]]:
+    """Hold each format's output to its expectation.
+
+    Every format is compared, even after one of them has already failed: a
+    run that stops at the first bad format cannot say whether the others
+    diverged too, which is the question a conformance report exists to
+    answer.
+
+    Returns the differences, the formats that failed, and the expectation
+    files that turned out not to be what they claim -- the last kept apart
+    because a corpus error is not the implementation's failure.
+    """
     differences: list[Difference] = []
     failed: list[str] = []
     corpus_errors: list[str] = []
@@ -152,39 +180,34 @@ def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: 
             continue
         if fmt not in fixture.expected:
             continue
-        # Bytes on both sides: the `-t html` rule is byte equality, and
-        # text mode would translate a CRLF divergence out of existence
-        # before the comparison saw it.
         sidecar = fixture.expected[fmt]
-        expected = sidecar.read_bytes()
-        # The expectation is read on its own first. Normalizing both sides in
-        # one call means a corpus file that is not a valid Collection -- hand
-        # edited, or carrying a field added upstream before the harness knew
-        # it -- fails every implementation at once with a message that names
-        # no side, which is the "four parser bugs that are really one corpus
-        # bug" diagnosis this repository exists to prevent.
+        # Bytes on both sides: the `-t html` rule is byte equality, and text
+        # mode would translate a CRLF divergence out of existence before the
+        # comparison saw it.
+        parse = FORMATS[fmt].parse
+        # The expectation is parsed on its own, so that a corpus file which is
+        # not a valid Collection -- hand edited, or carrying a field added
+        # upstream before the harness knew it -- is reported against the
+        # corpus rather than failing every implementation at once with a
+        # message that names no side.
         try:
-            VALIDATORS[fmt](expected)
+            want = parse(sidecar.read_bytes())
         except (NormalizationError, yaml.YAMLError) as exc:
             failed.append(fmt)
             corpus_errors.append(sidecar.name)
             differences.append(Difference(f"$({fmt})", "a Collection", f"{sidecar.name} is not one: {exc}"))
             continue
         try:
-            found = COMPARATORS[fmt](expected, proc.stdout)
+            got = parse(proc.stdout)
         except (NormalizationError, yaml.YAMLError) as exc:
             failed.append(fmt)
             differences.append(Difference(f"$({fmt})", "a Collection", f"the output is not one: {exc}"))
             continue
+        found = FORMATS[fmt].diff(want, got)
         if found:
             failed.append(fmt)
         differences.extend(found)
-
-    if corpus_errors:
-        return Result(fixture, Outcome.FAIL, f"corpus error: {', '.join(corpus_errors)}", tuple(differences))
-    if differences:
-        return Result(fixture, Outcome.FAIL, _summarize(failed, differences), tuple(differences))
-    return Result(fixture, Outcome.PASS)
+    return differences, failed, corpus_errors
 
 
 def _check_rejected(fixture: Fixture, runs: dict[str, subprocess.CompletedProcess[bytes]]) -> Result:

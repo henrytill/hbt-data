@@ -274,8 +274,18 @@ def _walk(path: str, expected: object, actual: object, out: list[Difference]) ->
 
 def compare(expected: object, actual: object) -> list[Difference]:
     """Normalize both sides and report every way they disagree."""
+    return diff(normalize(expected), normalize(actual))
+
+
+def diff(expected: object, actual: object) -> list[Difference]:
+    """Report every way two *already normalized* documents disagree.
+
+    Split from :func:`compare` so a caller that has to normalize the two
+    sides separately -- the runner does, to tell a corpus error from an
+    implementation's -- does not then normalize both a second time here.
+    """
     differences: list[Difference] = []
-    _walk("$", normalize(expected), normalize(actual), differences)
+    _walk("$", expected, actual, differences)
     return differences
 
 
@@ -318,7 +328,7 @@ def compare_html(expected: bytes, actual: bytes) -> list[Difference]:
         return []
     if left.replace(b"\r\n", b"\n") == right.replace(b"\r\n", b"\n"):
         return [Difference("$html", _line_endings(left), _line_endings(right))]
-    diff = difflib.unified_diff(
+    unified = difflib.unified_diff(
         _lines(left),
         _lines(right),
         fromfile="expected",
@@ -326,7 +336,7 @@ def compare_html(expected: bytes, actual: bytes) -> list[Difference]:
         lineterm="",
         n=1,
     )
-    return [Difference("$html", None, "\n".join(diff), kind="text")]
+    return [Difference("$html", None, "\n".join(unified), kind="text")]
 
 
 def _lines(document: bytes) -> list[str]:

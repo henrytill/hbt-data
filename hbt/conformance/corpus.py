@@ -47,8 +47,10 @@ CATEGORIES: dict[str, frozenset[str]] = {
 
 # An expectation is keyed by the `-t` format that produces it.  Every fixture
 # pins `-t yaml`; only the nine HTML fixtures pin `-t html`, which is a second
-# output format and a second way for the four to diverge.  A third format would
-# be another entry here and nothing else.
+# output format and a second way for the four to diverge.  A third format is
+# an entry here and a `Format` in runner.py -- this module deliberately knows
+# nothing about how a document is read or compared, so that listing the corpus
+# does not depend on the comparison machinery.
 EXPECTED_SUFFIXES = {
     "yaml": ".expected.yaml",
     "html": ".expected.html",
