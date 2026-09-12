@@ -18,6 +18,7 @@ quietly asserts less than its author thought.
 from __future__ import annotations
 
 import fnmatch
+import glob
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -90,9 +91,17 @@ def revision(root: Path | None = None) -> str:
 
 
 def _sidecars(stem: Path) -> dict[str, Path]:
-    """Every ``<stem>.expected.*`` beside a fixture, keyed by its suffix."""
+    """Every ``<stem>.expected.*`` beside a fixture, keyed by its suffix.
+
+    The stem is escaped before it goes into the pattern: a fixture named
+    ``a[1]`` would otherwise be read as a character class, match nothing, and
+    discover as a fixture with no expectations at all -- asserting only that
+    the input parses, with no UnknownSidecar to say so.  Corpus names are all
+    ``[a-z_]`` today, so this is latent, and it fails in exactly the quiet way
+    this module refuses to fail elsewhere.
+    """
     prefix = f"{stem.name}.expected."
-    return {path.name[len(stem.name) :]: path for path in stem.parent.glob(f"{prefix}*")}
+    return {path.name[len(stem.name) :]: path for path in stem.parent.glob(glob.escape(prefix) + "*")}
 
 
 @dataclass(frozen=True)

@@ -54,6 +54,13 @@ class Discovery(unittest.TestCase):
         with self.assertRaisesRegex(UnknownSidecar, "a.expected.yml"):
             Corpus.discover(self.root)
 
+    def test_a_glob_metacharacter_in_a_name_does_not_hide_its_sidecars(self) -> None:
+        """Unescaped, `a[1]` reads as a character class and matches nothing."""
+        self.write("markdown/a[1].input.md")
+        self.write("markdown/a[1].expected.yaml")
+        (fixture,) = Corpus.discover(self.root).fixtures
+        self.assertEqual(set(fixture.expected), {"yaml"})
+
     def test_coverage_counts_fixtures_per_format(self) -> None:
         self.write("markdown/a.input.md")
         self.write("markdown/a.expected.yaml")
