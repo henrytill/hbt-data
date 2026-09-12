@@ -32,7 +32,7 @@ from typing import Callable
 import yaml
 
 from hbt.conformance.corpus import Fixture
-from hbt.conformance.normalize import Difference, NormalizationError, compare, compare_html
+from hbt.conformance.normalize import Difference, NormalizationError, compare, compare_html, normalize
 from hbt.conformance.yaml_io import load_yaml
 
 DEFAULT_TIMEOUT = 30.0
@@ -42,6 +42,15 @@ DEFAULT_TIMEOUT = 30.0
 COMPARATORS: dict[str, Callable[[bytes, bytes], list[Difference]]] = {
     "yaml": lambda expected, actual: compare(load_yaml(_decode(expected)), load_yaml(_decode(actual))),
     "html": compare_html,
+}
+
+
+#: How each output format's expectation is read on its own, so that a corpus
+#: file which is not what it claims to be is reported against the corpus
+#: rather than against whichever implementation happened to be running.
+VALIDATORS: dict[str, Callable[[bytes], object]] = {
+    "yaml": lambda raw: normalize(load_yaml(_decode(raw))),
+    "html": lambda raw: raw,
 }
 
 
@@ -131,6 +140,7 @@ def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: 
     # answer.
     differences: list[Difference] = []
     failed: list[str] = []
+    corpus_errors: list[str] = []
     for fmt in formats:
         proc = runs[fmt]
         if proc.returncode != 0:
@@ -142,17 +152,33 @@ def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: 
         # Bytes on both sides: the `-t html` rule is byte equality, and
         # text mode would translate a CRLF divergence out of existence
         # before the comparison saw it.
-        expected = fixture.expected[fmt].read_bytes()
+        sidecar = fixture.expected[fmt]
+        expected = sidecar.read_bytes()
+        # The expectation is read on its own first. Normalizing both sides in
+        # one call means a corpus file that is not a valid Collection -- hand
+        # edited, or carrying a field added upstream before the harness knew
+        # it -- fails every implementation at once with a message that names
+        # no side, which is the "four parser bugs that are really one corpus
+        # bug" diagnosis this repository exists to prevent.
+        try:
+            VALIDATORS[fmt](expected)
+        except (NormalizationError, yaml.YAMLError) as exc:
+            failed.append(fmt)
+            corpus_errors.append(sidecar.name)
+            differences.append(Difference(f"$({fmt})", "a Collection", f"{sidecar.name} is not one: {exc}"))
+            continue
         try:
             found = COMPARATORS[fmt](expected, proc.stdout)
         except (NormalizationError, yaml.YAMLError) as exc:
             failed.append(fmt)
-            differences.append(Difference(f"$({fmt})", "a Collection", str(exc)))
+            differences.append(Difference(f"$({fmt})", "a Collection", f"the output is not one: {exc}"))
             continue
         if found:
             failed.append(fmt)
         differences.extend(found)
 
+    if corpus_errors:
+        return Result(fixture, Outcome.FAIL, f"corpus error: {', '.join(corpus_errors)}", tuple(differences))
     if differences:
         return Result(fixture, Outcome.FAIL, _summarize(failed, differences), tuple(differences))
     return Result(fixture, Outcome.PASS)
