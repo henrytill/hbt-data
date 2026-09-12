@@ -38,7 +38,7 @@ from __future__ import annotations
 import difflib
 import re
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence, cast
+from typing import Any, Callable, Literal, Mapping, Sequence, TypeVar, cast
 
 SEMVER = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
@@ -53,6 +53,16 @@ ENTITY_TIME_LISTS = ("updatedAt",)
 ENTITY_TIMES = ("createdAt", "lastVisitedAt")
 ENTITY_FLAGS = ("shared", "toRead", "isFeed")
 ENTITY_REQUIRED = ("uri", "createdAt")
+# The membership of these tuples restates collection.schema.json's property
+# lists; the partition by normalization behavior is this module's own.  A test
+# holds the membership to the schema, so a field added upstream shows up as one
+# red test here rather than as "unknown field" against four conforming
+# implementations.
+ENTITY_FIELDS = frozenset(ENTITY_TEXT_LISTS + ENTITY_TIME_LISTS + ENTITY_TIMES + ENTITY_FLAGS + ("uri",))
+NODE_FIELDS = frozenset({"id", "entity", "edges"})
+COLLECTION_FIELDS = frozenset({"version", "length", "value"})
+
+T = TypeVar("T")
 
 
 class NormalizationError(Exception):
@@ -77,7 +87,7 @@ class Difference:
     path: str
     expected: object
     actual: object
-    kind: str = "value"
+    kind: Literal["value", "order", "text"] = "value"
 
     def render(self) -> str:
         """One or more lines naming where the two documents disagree."""
@@ -90,6 +100,12 @@ class Difference:
                 f"  actual   {self.actual!r}"
             )
         return f"{self.path}: expected {self.expected!r}, got {self.actual!r}"
+
+
+def _reject_unknown(raw: Mapping[str, Any], known: frozenset[str], path: str) -> None:
+    unknown = sorted(set(raw) - known)
+    if unknown:
+        raise NormalizationError(path, f"unknown field(s) {', '.join(unknown)}")
 
 
 def _require_mapping(value: object, path: str) -> Mapping[str, Any]:
@@ -137,48 +153,35 @@ def _unique(items: Sequence[Any], path: str) -> None:
         seen.append(item)
 
 
-def _text_list(value: object, path: str) -> list[str]:
-    """A set-valued field of strings.  Absent and null both read as empty."""
-    if value is None:
-        return []
-    items = _require_sequence(value, path)
-    out: list[str] = []
-    for i, item in enumerate(items):
-        if not isinstance(item, str):
-            raise NormalizationError(f"{path}[{i}]", f"expected a string, got {item!r}")
-        out.append(item)
-    _unique(out, path)
-    return out
+def _string(value: object, path: str) -> str:
+    if not isinstance(value, str):
+        raise NormalizationError(path, f"expected a string, got {value!r}")
+    return value
 
 
-def _time_list(value: object, path: str) -> list[int]:
-    if value is None:
-        return []
-    items = _require_sequence(value, path)
-    out = [_time(item, f"{path}[{i}]") for i, item in enumerate(items)]
+def _set_of(value: object, path: str, item: Callable[[object, str], T]) -> list[T]:
+    """A ``uniqueItems`` field.  Absent and null both read as empty."""
+    entries = _require_sequence(value or [], path)
+    out = [item(entry, f"{path}[{i}]") for i, entry in enumerate(entries)]
     _unique(out, path)
     return out
 
 
 def _entity(value: object, path: str) -> dict[str, Any]:
     raw = _require_mapping(value, path)
-    known = set(ENTITY_TEXT_LISTS) | set(ENTITY_TIME_LISTS) | set(ENTITY_TIMES) | set(ENTITY_FLAGS) | {"uri"}
-    unknown = sorted(set(raw) - known)
-    if unknown:
-        raise NormalizationError(path, f"unknown field(s) {', '.join(unknown)}")
+    _reject_unknown(raw, ENTITY_FIELDS, path)
     for field in ENTITY_REQUIRED:
         if raw.get(field) is None:
             raise NormalizationError(f"{path}.{field}", "required field is missing")
 
-    uri = raw["uri"]
-    if not isinstance(uri, str):
-        raise NormalizationError(f"{path}.uri", f"expected a string, got {uri!r}")
-
-    out: dict[str, Any] = {"uri": uri, "createdAt": _time(raw["createdAt"], f"{path}.createdAt")}
+    out: dict[str, Any] = {
+        "uri": _string(raw["uri"], f"{path}.uri"),
+        "createdAt": _time(raw["createdAt"], f"{path}.createdAt"),
+    }
     for field in ENTITY_TIME_LISTS:
-        out[field] = _time_list(raw.get(field), f"{path}.{field}")
+        out[field] = _set_of(raw.get(field), f"{path}.{field}", _time)
     for field in ENTITY_TEXT_LISTS:
-        out[field] = _text_list(raw.get(field), f"{path}.{field}")
+        out[field] = _set_of(raw.get(field), f"{path}.{field}", _string)
     # Optional scalars are dropped when unset, so that absent and null land on
     # the same normalized form rather than on two forms that compare unequal.
     if raw.get("lastVisitedAt") is not None:
@@ -192,22 +195,15 @@ def _entity(value: object, path: str) -> dict[str, Any]:
 
 def _node(value: object, path: str) -> dict[str, Any]:
     raw = _require_mapping(value, path)
-    unknown = sorted(set(raw) - {"id", "entity", "edges"})
-    if unknown:
-        raise NormalizationError(path, f"unknown field(s) {', '.join(unknown)}")
+    _reject_unknown(raw, NODE_FIELDS, path)
     if "id" not in raw:
         raise NormalizationError(f"{path}.id", "required field is missing")
     if "entity" not in raw:
         raise NormalizationError(f"{path}.entity", "required field is missing")
-    edges_raw = raw.get("edges")
-    edges = [
-        _index(edge, f"{path}.edges[{i}]") for i, edge in enumerate(_require_sequence(edges_raw or [], f"{path}.edges"))
-    ]
-    _unique(edges, f"{path}.edges")
     return {
         "id": _index(raw["id"], f"{path}.id"),
         "entity": _entity(raw["entity"], f"{path}.entity"),
-        "edges": edges,
+        "edges": _set_of(raw.get("edges"), f"{path}.edges", _index),
     }
 
 
@@ -217,9 +213,7 @@ def normalize(document: object) -> dict[str, Any]:
     Raises :class:`NormalizationError` if the document is not a Collection.
     """
     raw = _require_mapping(document, "$")
-    unknown = sorted(set(raw) - {"version", "length", "value"})
-    if unknown:
-        raise NormalizationError("$", f"unknown field(s) {', '.join(unknown)}")
+    _reject_unknown(raw, COLLECTION_FIELDS, "$")
 
     version = raw.get("version")
     if not isinstance(version, str) or not SEMVER.match(version):
@@ -239,54 +233,43 @@ def normalize(document: object) -> dict[str, Any]:
     return {"version": version, "length": length, "value": nodes}
 
 
-def _shape(value: object) -> tuple[str, object]:
-    """Classify a normalized value, discarding the container's element types.
+def _walk_map(path: str, expected: dict[str, object], actual: dict[str, object], out: list[Difference]) -> None:
+    for key in sorted(set(expected) | set(actual)):
+        if key not in expected:
+            out.append(Difference(f"{path}.{key}", "(absent)", actual[key]))
+        elif key not in actual:
+            out.append(Difference(f"{path}.{key}", expected[key], "(absent)"))
+        else:
+            _walk(f"{path}.{key}", expected[key], actual[key], out)
 
-    Written as a separate step so the comparison below never handles a value
-    whose element type is unknown -- ``normalize`` has already established the
-    shape, and re-narrowing it inline leaves the checkers holding
-    ``dict[Unknown, Unknown]``.
-    """
-    if isinstance(value, dict):
-        return "map", cast("dict[str, object]", value)
-    if isinstance(value, list):
-        return "list", cast("list[object]", value)
-    return "scalar", value
+
+def _walk_list(path: str, expected: list[object], actual: list[object], out: list[Difference]) -> None:
+    if expected != actual and sorted(map(repr, expected)) == sorted(map(repr, actual)):
+        out.append(Difference(path, expected, actual, kind="order"))
+        return
+    for i in range(max(len(expected), len(actual))):
+        if i >= len(expected):
+            out.append(Difference(f"{path}[{i}]", "(absent)", actual[i]))
+        elif i >= len(actual):
+            out.append(Difference(f"{path}[{i}]", expected[i], "(absent)"))
+        else:
+            _walk(f"{path}[{i}]", expected[i], actual[i], out)
 
 
 def _walk(path: str, expected: object, actual: object, out: list[Difference]) -> None:
-    expected_kind, expected_value = _shape(expected)
-    actual_kind, actual_value = _shape(actual)
-
-    if expected_kind == "map" and actual_kind == "map":
-        expected_map = cast("dict[str, object]", expected_value)
-        actual_map = cast("dict[str, object]", actual_value)
-        for key in sorted(set(expected_map) | set(actual_map)):
-            if key not in expected_map:
-                out.append(Difference(f"{path}.{key}", "(absent)", actual_map[key]))
-            elif key not in actual_map:
-                out.append(Difference(f"{path}.{key}", expected_map[key], "(absent)"))
-            else:
-                _walk(f"{path}.{key}", expected_map[key], actual_map[key], out)
-        return
-
-    if expected_kind == "list" and actual_kind == "list":
-        expected_list = cast("list[object]", expected_value)
-        actual_list = cast("list[object]", actual_value)
-        if expected_list != actual_list and sorted(map(repr, expected_list)) == sorted(map(repr, actual_list)):
-            out.append(Difference(path, expected_list, actual_list, kind="order"))
-            return
-        for i in range(max(len(expected_list), len(actual_list))):
-            if i >= len(expected_list):
-                out.append(Difference(f"{path}[{i}]", "(absent)", actual_list[i]))
-            elif i >= len(actual_list):
-                out.append(Difference(f"{path}[{i}]", expected_list[i], "(absent)"))
-            else:
-                _walk(f"{path}[{i}]", expected_list[i], actual_list[i], out)
-        return
-
-    if expected_value != actual_value or type(expected_value) is not type(actual_value):
-        out.append(Difference(path, expected_value, actual_value))
+    if isinstance(expected, dict) and isinstance(actual, dict):
+        _walk_map(path, cast("dict[str, object]", expected), cast("dict[str, object]", actual), out)
+    elif isinstance(expected, list) and isinstance(actual, list):
+        _walk_list(path, cast("list[object]", expected), cast("list[object]", actual), out)
+    else:
+        # `expected` is widened deliberately.  The isinstance tests above are
+        # short-circuiting, so on this branch the checkers still hold
+        # `dict[Unknown, Unknown] | list[Unknown] | object` for it -- not a
+        # type anything downstream can use.  `actual` needs no such help,
+        # having been tested in both arms.
+        left = cast("object", expected)
+        if left != actual or type(left) is not type(actual):
+            out.append(Difference(path, left, actual))
 
 
 def compare(expected: object, actual: object) -> list[Difference]:
@@ -307,8 +290,8 @@ def compare_html(expected: str, actual: str) -> list[Difference]:
     serializer's house style.  Widening this rule should be a decision taken
     when a divergence turns out to be legitimate, not a default.
     """
-    left = expected[:-1] if expected.endswith("\n") else expected
-    right = actual[:-1] if actual.endswith("\n") else actual
+    left = expected.removesuffix("\n")
+    right = actual.removesuffix("\n")
     if left == right:
         return []
     diff = difflib.unified_diff(
@@ -319,4 +302,4 @@ def compare_html(expected: str, actual: str) -> list[Difference]:
         lineterm="",
         n=1,
     )
-    return [Difference("$html", left, "\n".join(diff), kind="text")]
+    return [Difference("$html", None, "\n".join(diff), kind="text")]
