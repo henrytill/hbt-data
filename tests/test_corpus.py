@@ -13,10 +13,8 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 from hbt.conformance.corpus import (
-    CATEGORIES,
     CollidingInputs,
     ContradictoryExpectations,
     Corpus,
@@ -93,18 +91,12 @@ class Discovery(unittest.TestCase):
             Corpus.discover(self.root)
 
     def test_two_inputs_may_not_share_one_name(self) -> None:
-        """One name for two cases makes a waiver and a failure ambiguous.
-
-        No category takes two extensions today, so the collision is only
-        reachable through one that does -- the guard outlives the arithmetic
-        that currently makes it unreachable.
-        """
+        """One name for two cases makes a waiver and a failure ambiguous."""
         self.write("markdown/a.input.md")
         self.write("markdown/a.input.html")
         self.write("markdown/a.expected.yaml")
-        with patch.dict(CATEGORIES, {"markdown": frozenset({".md", ".html"})}):
-            with self.assertRaisesRegex(CollidingInputs, "markdown/a"):
-                Corpus.discover(self.root)
+        with self.assertRaisesRegex(CollidingInputs, "markdown/a"):
+            Corpus.discover(self.root)
 
     def test_a_rejection_fixture_may_not_also_pin_an_output(self) -> None:
         """The rejection is checked first, so the expectation is never read."""
