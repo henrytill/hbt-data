@@ -43,12 +43,31 @@ ERROR_SUFFIX = ".expected.error"
 RECOGNIZED_SUFFIXES = frozenset(EXPECTED_SUFFIXES.values()) | {ERROR_SUFFIX}
 
 
-class UnknownSidecar(Exception):
+class CorpusError(Exception):
+    """A fixture the harness refuses to guess at.
+
+    Discovery is filename-derived and has no manifest to check itself
+    against, so a fixture whose files contradict each other has to be an
+    error: the alternative is always a case that quietly asserts less than
+    the files sitting beside it imply.
+    """
+
+
+class UnknownSidecar(CorpusError):
     """A ``<stem>.expected.*`` file that no output format claims.
 
     Almost always a typo or a format whose support was never added.  Reported
     rather than ignored, because the alternative is a fixture that silently
     checks less than the file sitting next to it implies.
+    """
+
+
+class ContradictoryExpectations(CorpusError):
+    """A fixture that must be rejected and also pins what it parses to.
+
+    ``.expected.error`` says every implementation must refuse the input,
+    which is checked before any output is compared -- so an output
+    expectation beside it is never read.  The two cannot both be meant.
     """
 
 
@@ -132,11 +151,18 @@ class Corpus:
                 raise UnknownSidecar(f"{stem.parent.relative_to(root)}: no output format claims {names}")
 
             error_path = sidecars.get(ERROR_SUFFIX)
+            outputs = {fmt: sidecars[suffix] for fmt, suffix in EXPECTED_SUFFIXES.items() if suffix in sidecars}
+            if error_path is not None and outputs:
+                names = ", ".join(sorted(path.name for path in outputs.values()))
+                raise ContradictoryExpectations(
+                    f"{stem.parent.relative_to(root)}: {error_path.name} says the input is refused,"
+                    f" but {names} says what it parses to"
+                )
             found.append(
                 Fixture(
                     name=str(stem.relative_to(root)),
                     input_path=path,
-                    expected={fmt: sidecars[s] for fmt, s in EXPECTED_SUFFIXES.items() if s in sidecars},
+                    expected=outputs,
                     error=(
                         error_path.read_text(encoding="utf-8").strip() or "(no reason given)"
                         if error_path is not None

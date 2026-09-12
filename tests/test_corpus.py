@@ -14,7 +14,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from hbt.conformance.corpus import Corpus, UnknownSidecar, categories, coverage
+from hbt.conformance.corpus import ContradictoryExpectations, Corpus, UnknownSidecar, categories, coverage
 
 
 class Discovery(unittest.TestCase):
@@ -52,6 +52,14 @@ class Discovery(unittest.TestCase):
         self.write("markdown/a.input.md")
         self.write("markdown/a.expected.yml")
         with self.assertRaisesRegex(UnknownSidecar, "a.expected.yml"):
+            Corpus.discover(self.root)
+
+    def test_a_rejection_fixture_may_not_also_pin_an_output(self) -> None:
+        """The rejection is checked first, so the expectation is never read."""
+        self.write("markdown/a.input.md")
+        self.write("markdown/a.expected.error", "missing-date")
+        self.write("markdown/a.expected.yaml")
+        with self.assertRaisesRegex(ContradictoryExpectations, "a.expected.yaml"):
             Corpus.discover(self.root)
 
     def test_a_glob_metacharacter_in_a_name_does_not_hide_its_sidecars(self) -> None:
