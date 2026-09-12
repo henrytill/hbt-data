@@ -141,11 +141,20 @@ class Fixture:
     expected: dict[str, Path]
     #: The reason the input must be refused, or ``None`` if it must parse.
     error: str | None
+    #: The file that reason came from, kept so the report can name every file
+    #: a fixture is made of rather than only the ones holding a document.
+    error_path: Path | None = None
 
     @property
     def rejected(self) -> bool:
         """Whether every implementation must refuse this input."""
         return self.error is not None
+
+    @property
+    def files(self) -> tuple[Path, ...]:
+        """Everything this fixture pins, in a stable order."""
+        pinned = [self.expected[fmt] for fmt in sorted(self.expected)]
+        return tuple(pinned or ([self.error_path] if self.error_path is not None else []))
 
 
 def _reject_orphans(root: Path, named: set[str]) -> None:
@@ -264,6 +273,7 @@ class Corpus:
                         if error_path is not None
                         else None
                     ),
+                    error_path=error_path,
                 )
             )
         _reject_orphans(root, set(inputs))
