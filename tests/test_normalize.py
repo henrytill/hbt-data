@@ -12,9 +12,8 @@ from __future__ import annotations
 import unittest
 from typing import Any
 
-import yaml
-
 from hbt.conformance.normalize import NormalizationError, compare, compare_html, normalize
+from hbt.conformance.yaml_io import load_yaml
 
 
 def collection(*entities: dict[str, Any]) -> dict[str, Any]:
@@ -38,10 +37,13 @@ class GrantedEquivalences(unittest.TestCase):
     def test_scalar_quoting_is_not_a_difference(self) -> None:
         """The contract is the YAML data model, not the bytes.
 
-        hbt-rs leaves a URI containing '#' unquoted and hbt-go quotes it; both
-        are the same string once parsed.
+        Live on three corpus fixtures: hbt-rs and hbt-ocaml leave a URI
+        containing '#' unquoted where hbt-go and hbt-hs quote it.
         """
-        self.assertEqual(yaml.safe_load("uri: https://x/y#z"), yaml.safe_load("uri: 'https://x/y#z'"))
+        plain = "version: 0.1.0\nlength: 1\nvalue:\n- id: 0\n  entity:\n    uri: https://x/y#z\n"
+        quoted = plain.replace("https://x/y#z", "'https://x/y#z'")
+        body = "    createdAt: 1700092800\n    updatedAt: []\n    names: []\n    labels: []\n  edges: []\n"
+        self.assertEqual(compare(load_yaml(plain + body), load_yaml(quoted + body)), [])
 
     def test_null_equals_absent_for_optional_flags(self) -> None:
         explicit = collection(entity(shared=None, toRead=None, isFeed=None))
