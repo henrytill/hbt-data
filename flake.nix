@@ -40,6 +40,9 @@
             fileset = pkgs.lib.fileset.unions [
               ./hbt/conformance
               ./tests
+              # The schema is the authority on field names and types, and a
+              # test holds the normalizer's roster to it.
+              ./collection.schema.json
               ./pyproject.toml
               ./README.md
             ];
