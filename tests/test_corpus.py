@@ -71,6 +71,14 @@ class Discovery(unittest.TestCase):
         (fixture,) = Corpus.discover(self.root).fixtures
         self.assertTrue(fixture.rejected)
 
+    def test_an_expectation_with_no_input_is_an_error(self) -> None:
+        """Discovery walks the inputs, so nothing would ever read this file."""
+        self.write("markdown/a.input.md")
+        self.write("markdown/a.expected.yaml")
+        self.write("markdown/gone.expected.yaml")
+        with self.assertRaisesRegex(IncompleteFixture, "gone.expected.yaml"):
+            Corpus.discover(self.root)
+
     def test_an_input_must_match_the_category_holding_it(self) -> None:
         """The extension picks the parser; the directory picks the column."""
         self.write("markdown/a.input.json")
