@@ -13,14 +13,18 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
+import hbt.conformance.corpus as corpus_module
 from hbt.conformance.corpus import (
     CollidingInputs,
     ContradictoryExpectations,
     Corpus,
     IncompleteFixture,
     MisfiledInput,
+    NoCorpus,
     UnknownSidecar,
+    _root,
 )
 
 
@@ -153,3 +157,28 @@ class Selection(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DefaultRoot(unittest.TestCase):
+    """Walking up from the source file is a guess, and it has to be checked."""
+
+    def walk_up_from(self, root: Path) -> Path:
+        """`_root()` as if this package were installed under `root`."""
+        source = root / "hbt" / "conformance" / "corpus.py"
+        with mock.patch.object(corpus_module, "__file__", str(source)):
+            return _root()
+
+    def test_a_root_holding_a_category_is_the_corpus(self) -> None:
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        (root / "markdown").mkdir()
+        self.assertEqual(self.walk_up_from(root), root.resolve())
+
+    def test_a_root_holding_no_categories_is_refused(self) -> None:
+        """What site-packages looks like: the walk lands somewhere plausible.
+
+        The build sandbox is the other case -- the derivation's `src` filters
+        the corpus out -- so this is not only the installed path.
+        """
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        with self.assertRaisesRegex(NoCorpus, "--corpus"):
+            self.walk_up_from(root)
