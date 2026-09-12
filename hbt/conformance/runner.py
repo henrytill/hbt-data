@@ -25,9 +25,10 @@ from __future__ import annotations
 import enum
 import os
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping, Sequence
 
 import yaml
 
@@ -228,3 +229,32 @@ def _stderr(proc: subprocess.CompletedProcess[bytes]) -> str:
     message = _decode(proc.stderr).strip().splitlines()
     detail = message[0] if message else "no diagnostic on stderr"
     return f"exited {proc.returncode}: {detail}"
+
+
+def check_all(
+    fixtures: Sequence[Fixture],
+    binary: Path,
+    timeout: float = DEFAULT_TIMEOUT,
+    tz: str | None = None,
+    jobs: int = 8,
+    waived: Mapping[str, str] | None = None,
+) -> list[Result]:
+    """Check every fixture against one executable, waiving what the caller expects to fail.
+
+    The entry point for anything holding an implementation to the corpus
+    without wanting a printed report -- the cross-implementation matrix being
+    the reason this package is importable at all. It takes what it needs
+    rather than the command line's record, so a caller need not build one.
+
+    Threads rather than a sequential loop: nearly all of the time is spent
+    waiting on subprocesses. `map` yields in submission order, so the results
+    are deterministic without any sorting.
+    """
+    expected_to_fail = waived or {}
+
+    def run_one(fixture: Fixture) -> Result:
+        return check(fixture, binary, timeout, tz)
+
+    with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
+        checked = pool.map(run_one, fixtures)
+        return [r.waive(expected_to_fail[r.fixture.name]) if r.fixture.name in expected_to_fail else r for r in checked]

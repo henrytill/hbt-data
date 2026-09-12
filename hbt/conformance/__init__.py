@@ -24,11 +24,14 @@ from hbt.conformance.corpus import (
     UnknownSidecar,
 )
 from hbt.conformance.normalize import Difference, NormalizationError, compare, compare_html, normalize
-from hbt.conformance.runner import Outcome, Result, check
+from hbt.conformance.runner import Outcome, Result, check, check_all
 from hbt.conformance.yaml_io import load_yaml
 
 __all__ = [
+    "CollidingInputs",
+    "ContradictoryExpectations",
     "Corpus",
+    "CorpusError",
     "Difference",
     "Fixture",
     "IncompleteFixture",
@@ -36,11 +39,9 @@ __all__ = [
     "NormalizationError",
     "Outcome",
     "Result",
-    "CollidingInputs",
-    "ContradictoryExpectations",
-    "CorpusError",
     "UnknownSidecar",
     "check",
+    "check_all",
     "compare",
     "compare_html",
     "load_yaml",
