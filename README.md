@@ -17,9 +17,11 @@ python3 -m hbt.conformance --binary path/to/hbt
 Runs every fixture against one `hbt` executable and reports what does not conform:
 
 ```
-corpus 0523150 • 37 fixture(s) (9 html, 37 yaml) • binary result-hbt-go/bin/hbt
+corpus 0523150 • 37 fixtures (9 html, 25 markdown, 3 pinboard) • 9 -t html, 37 -t yaml • binary result-hbt-go/bin/hbt
 37 pass
 ```
+
+The header counts the fixtures the run selected, on both sides: the corpus directories say which parsers were exercised, and the `-t` formats say which formatters were — only the HTML fixtures pin `-t html`, so a total alone would not say that the HTML formatter went unchecked on the other 28 inputs.
 
 Installed via the flake, the harness carries only the code — the fixtures are the other half of this repository and would rebuild the package every time one changed — so `nix run github:henrytill/hbt-data -- --binary … --corpus …` needs `--corpus` pointed at a checkout. Run from a checkout and it finds them itself.
 
