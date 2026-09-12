@@ -13,7 +13,7 @@ from typing import Sequence, TextIO, cast
 import click
 
 from hbt.conformance import __version__
-from hbt.conformance.corpus import Corpus, CorpusError, Fixture, categories, coverage, revision
+from hbt.conformance.corpus import Corpus, CorpusError, Fixture, revision
 from hbt.conformance.runner import DEFAULT_TIMEOUT, Outcome, Result, check
 
 
@@ -55,31 +55,38 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
 
 def _header(corpus: Corpus, selected: Sequence[Fixture], binary: Path, tz: str | None) -> str:
-    """The one line that says what is being checked, and against what.
+    """What is being checked, and against what, one fact to a line.
 
-    Both halves of the coverage are stated rather than left implicit.  The
-    corpus directories say which parsers were exercised -- a run reporting
-    only "9 html, 37 yaml" reads as though the markdown and pinboard fixtures
-    never ran -- and the output formats say which formatters were, since only
-    the HTML fixtures pin `-t html` and "37 pass" alone would not say that the
-    HTML formatter went unchecked on the other 28 inputs.
+    Only what the table beneath cannot say.  Each row names its category and
+    lists the expectations it was held to, so a coverage breakdown in the
+    header was a workaround for a table that named neither -- but the
+    denominator is not in the rows, and a filtered run should say what it
+    filtered from.
 
-    Counted over the selected fixtures, not the corpus: a run filtered down to
-    one markdown case has not checked nine HTML expectations, and saying it
-    had was the more misleading half of the old line.  The corpus revision is
-    here because a stale pin otherwise surfaces as dozens of opaque failures.
+    The revision is here because a stale pin otherwise surfaces as dozens of
+    opaque failures.  The binary distinguishes two runs in a CI log, and is
+    usually a store path wider than a terminal, which is why this is a keyed
+    block and not a sentence.  TZ appears only when one was forced: the
+    ambient zone is the default, and naming it would imply the harness had
+    pinned it.
     """
-    inputs = ", ".join(f"{n} {category}" for category, n in sorted(categories(selected).items()))
-    formats = ", ".join(f"{n} -t {fmt}" for fmt, n in sorted(coverage(selected).items()) if n)
-    zone = f" \u2022 TZ={tz}" if tz else ""
-    plural = "" if len(selected) == 1 else "s"
-    return (
-        f"corpus {revision(corpus.root)} \u2022 {len(selected)} fixture{plural} ({inputs})"
-        f" \u2022 {formats} \u2022 binary {binary}{zone}"
-    )
+    rows = [
+        ("corpus", revision(corpus.root)),
+        ("fixtures", f"{len(selected)} of {len(corpus.fixtures)}"),
+        ("binary", str(binary)),
+    ]
+    if tz is not None:
+        rows.append(("TZ", tz))
+    width = max(len(key) for key, _ in rows)
+    return "\n".join(f"{key.ljust(width)}  {value}" for key, value in rows)
 
 
-def report(results: Sequence[Result], quiet: bool, out: TextIO) -> None:
+def _suffix(fixture: Fixture, path: Path) -> str:
+    """What ``path`` adds to the fixture's stem, e.g. ``.input.md``."""
+    return path.name[len(Path(fixture.name).name) :]
+
+
+def report(results: Sequence[Result], quiet: bool, out: TextIO) -> int:
     """Print one line per fixture, with any differences beneath it.
 
     Every fixture is named, passes included, because the four suites this
@@ -87,16 +94,50 @@ def report(results: Sequence[Result], quiet: bool, out: TextIO) -> None:
     which cases ran, and a harness that prints only a total moves "did my
     fixture actually run?" back into a `--list` invocation.  `--quiet` is for
     a caller that wants only what failed.
+
+    The stem is its own column and the files are the suffixes beside it.
+    Printing whole paths says the stem twice a row, which in columns is most
+    of the width; printing only the stem leaves out which input was parsed
+    and which expectations it was held to -- the HTML fixtures pin two, and
+    nothing else in the report distinguishes them from the twenty-eight that
+    pin one.  Splitting them says both once.
+
+    The stem column is also the fixture's name, which is what ``--waivers``
+    entries and filter arguments take, so a failing row can be copied into
+    either.
+
+    Returns how many rows it printed, so the caller can tell a run that said
+    nothing from one that did and space the report accordingly.
+
+    Five columns, padded to the widest row actually printed, in an order that
+    also suits a filter: outcome, name, input, expectations, and the reason
+    last because it is the only field with spaces in it.  The expectations
+    are comma-joined without a space, so every row has the same number of
+    whitespace-separated fields and ``awk '$1 == "FAIL" {print $2}'`` prints
+    a list of names that can be fed straight back in.  Alignment is a width
+    pass and str.ljust; a table library would be a dependency in four
+    implementations' closures for five columns.
     """
-    for result in results:
-        if result.outcome is Outcome.PASS and quiet:
-            continue
-        label = result.outcome.value.upper()
-        suffix = f" -- {result.reason}" if result.reason else ""
-        print(f"{label:>5}  {result.fixture.name}{suffix}", file=out)
-        for difference in result.differences:
+    rows = [
+        (
+            result.outcome.value.upper(),
+            result.fixture.name,
+            _suffix(result.fixture, result.fixture.input_path),
+            ",".join(_suffix(result.fixture, path) for path in result.fixture.files),
+            result.reason or "",
+            result.differences,
+        )
+        for result in results
+        if not (result.outcome is Outcome.PASS and quiet)
+    ]
+    widths = [max((len(row[i]) for row in rows), default=0) for i in range(4)]
+    for *cells, reason, differences in rows:
+        line = "  ".join(cell.ljust(width) for cell, width in zip(cells, widths))
+        print(f"{line}  {reason}".rstrip(), file=out)
+        for difference in differences:
             for line in difference.render().splitlines():
-                print(f"         {line}", file=out)
+                print(f"    {line}", file=out)
+    return len(rows)
 
 
 def _check_all(fixtures: Sequence[Fixture], options: Options, waived: dict[str, str]) -> list[Result]:
@@ -159,7 +200,12 @@ def run(options: Options, out: TextIO) -> int:
     waived = read_waivers(options.waivers) if options.waivers else {}
     print(_header(corpus, selected, options.binary, options.tz), file=out)
     results = _check_all(selected, options, waived)
-    report(results, options.quiet, out)
+    # Blank lines rather than a rule: the report is three blocks -- what ran,
+    # what each fixture did, what it adds up to -- and a rule would be a
+    # fourth thing for a filter to skip past.
+    print(file=out)
+    if report(results, options.quiet, out):
+        print(file=out)
 
     counts = Counter(r.outcome for r in results)
     print(", ".join(f"{counts[o]} {o.value}" for o in Outcome if counts[o]), file=out)
