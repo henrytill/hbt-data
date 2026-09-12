@@ -120,6 +120,9 @@ def _decode(raw: bytes) -> str:
 
 def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: str | None = None) -> Result:
     """Run one fixture in every format it pins, and say whether it conformed."""
+    # Discovery refuses a fixture with no expectation at all, so an empty
+    # `expected` is a rejection fixture: run it as `-t yaml` to find out
+    # whether the input is refused, and compare nothing.
     formats = sorted(fixture.expected) or ["yaml"]
 
     runs: dict[str, subprocess.CompletedProcess[bytes]] = {}

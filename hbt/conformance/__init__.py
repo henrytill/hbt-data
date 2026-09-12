@@ -19,6 +19,7 @@ from hbt.conformance.corpus import (
     Corpus,
     CorpusError,
     Fixture,
+    IncompleteFixture,
     MisfiledInput,
     UnknownSidecar,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "Corpus",
     "Difference",
     "Fixture",
+    "IncompleteFixture",
     "MisfiledInput",
     "NormalizationError",
     "Outcome",
