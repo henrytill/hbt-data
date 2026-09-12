@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-import argparse
 import io
 import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Sequence, TextIO, cast
+
+import click
 
 from hbt.conformance import __version__
 from hbt.conformance.corpus import Corpus, CorpusError, Fixture, categories, coverage, revision
@@ -32,23 +34,24 @@ def read_waivers(path: Path) -> dict[str, str]:
     return waivers
 
 
-def build_parser() -> argparse.ArgumentParser:
-    """The command line."""
-    parser = argparse.ArgumentParser(
-        prog="hbt-conformance",
-        description="Run the hbt corpus against an hbt executable.",
-    )
-    parser.add_argument("--binary", type=Path, required=True, help="the hbt executable to test")
-    parser.add_argument("--corpus", type=Path, default=None, help="corpus root (defaults to this checkout)")
-    parser.add_argument("--waivers", type=Path, default=None, help="file of fixture names expected to fail")
-    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="per-fixture timeout in seconds")
-    parser.add_argument("--tz", default=None, help="run under this timezone instead of the ambient one")
-    parser.add_argument("-j", "--jobs", type=int, default=8, help="fixtures to run at once")
-    parser.add_argument("-l", "--list", action="store_true", help="list the selected fixtures and exit")
-    parser.add_argument("-q", "--quiet", action="store_true", help="report only what did not pass")
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
-    parser.add_argument("filter", nargs="*", help="fixture name, substring, or glob; all fixtures if omitted")
-    return parser
+@dataclass(frozen=True)
+class Options:  # pylint: disable=too-many-instance-attributes
+    """Everything a run is told, in the order the command line states it.
+
+    A record rather than the parser's own namespace: `run` is called by the
+    command and by anything driving the harness in-process, and neither
+    should have to know which library parsed the arguments.
+    """
+
+    binary: Path
+    corpus: Path | None = None
+    waivers: Path | None = None
+    timeout: float = DEFAULT_TIMEOUT
+    tz: str | None = None
+    jobs: int = 8
+    list_only: bool = False
+    quiet: bool = False
+    patterns: tuple[str, ...] = field(default_factory=tuple)
 
 
 def _header(corpus: Corpus, selected: Sequence[Fixture], binary: Path, tz: str | None) -> str:
@@ -96,21 +99,18 @@ def report(results: Sequence[Result], quiet: bool, out: TextIO) -> None:
                 print(f"         {line}", file=out)
 
 
-def _run(fixtures: list[Fixture], args: argparse.Namespace, waived: dict[str, str]) -> list[Result]:
+def _check_all(fixtures: Sequence[Fixture], options: Options, waived: dict[str, str]) -> list[Result]:
     """Check every fixture, waiving the ones the caller expects to fail.
 
     Threads rather than a sequential loop: nearly all of the time is spent
     waiting on subprocesses.  `map` yields in submission order, so the report
     stays deterministic without any sorting.
     """
-    binary: Path = args.binary
-    timeout: float = args.timeout
-    tz: str | None = args.tz
 
     def run_one(fixture: Fixture) -> Result:
-        return check(fixture, binary, timeout, tz)
+        return check(fixture, options.binary, options.timeout, options.tz)
 
-    with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
+    with ThreadPoolExecutor(max_workers=options.jobs) as pool:
         return [r.waive(waived[r.fixture.name]) if r.fixture.name in waived else r for r in pool.map(run_one, fixtures)]
 
 
@@ -133,42 +133,116 @@ def _utf8(stream: TextIO) -> TextIO:
     return cast(TextIO, stream)
 
 
-def main(argv: Sequence[str] | None = None, out: TextIO | None = None) -> int:
+def run(options: Options, out: TextIO) -> int:
     """Run the selected fixtures; 0 if every one of them conformed."""
-    args = build_parser().parse_args(argv)
-    stream: TextIO = out if out is not None else _utf8(sys.stdout)
-
     try:
-        corpus = Corpus.discover(args.corpus)
+        corpus = Corpus.discover(options.corpus)
     except CorpusError as exc:
-        print(f"error: {exc}", file=stream)
+        print(f"error: {exc}", file=out)
         return 2
 
     if not corpus.fixtures:
-        print(f"error: no fixtures under {corpus.root} -- is that a corpus checkout?", file=stream)
+        print(f"error: no fixtures under {corpus.root} -- is that a corpus checkout?", file=out)
         return 2
 
-    selected = corpus.select(args.filter)
+    selected = corpus.select(list(options.patterns))
 
-    if args.list:
+    if options.list_only:
         for fixture in selected:
-            print(fixture.name, file=stream)
+            print(fixture.name, file=out)
         return 0
 
     if not selected:
-        print(f"no fixture matches {' '.join(args.filter)}", file=stream)
+        print(f"no fixture matches {' '.join(options.patterns)}", file=out)
         return 2
 
-    waived = read_waivers(args.waivers) if args.waivers else {}
-    print(_header(corpus, selected, args.binary, args.tz), file=stream)
-    results = _run(selected, args, waived)
-    report(results, args.quiet, stream)
+    waived = read_waivers(options.waivers) if options.waivers else {}
+    print(_header(corpus, selected, options.binary, options.tz), file=out)
+    results = _check_all(selected, options, waived)
+    report(results, options.quiet, out)
 
     counts = Counter(r.outcome for r in results)
-    print(", ".join(f"{counts[o]} {o.value}" for o in Outcome if counts[o]), file=stream)
+    print(", ".join(f"{counts[o]} {o.value}" for o in Outcome if counts[o]), file=out)
 
     stale = sorted(set(waived) - {f.name for f in corpus.fixtures})
     for name in stale:
-        print(f"warning: waiver for unknown fixture {name}", file=stream)
+        print(f"warning: waiver for unknown fixture {name}", file=out)
 
     return 0 if all(r.outcome.ok for r in results) and not stale else 1
+
+
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
+# exists=True on the paths: a missing binary would otherwise be reported once
+# per fixture as "could not run", which is 37 lines saying one thing about the
+# caller rather than anything about conformance.
+@click.option(
+    "--binary",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="the hbt executable to test",
+)
+@click.option(
+    "--corpus",
+    "corpus_root",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    help="corpus root (defaults to this checkout)",
+)
+@click.option(
+    "--waivers",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="file of fixture names expected to fail",
+)
+@click.option(
+    "--timeout",
+    type=float,
+    default=DEFAULT_TIMEOUT,
+    show_default=True,
+    help="per-fixture timeout in seconds",
+)
+@click.option(
+    "--tz",
+    help="run under this timezone instead of the ambient one",
+)
+@click.option(
+    "-j",
+    "--jobs",
+    type=click.IntRange(min=1),
+    default=8,
+    show_default=True,
+    help="fixtures to run at once",
+)
+@click.option(
+    "-l",
+    "--list",
+    "list_only",
+    is_flag=True,
+    help="list the selected fixtures and exit",
+)
+@click.option(
+    "-q",
+    "--quiet",
+    is_flag=True,
+    help="report only what did not pass",
+)
+@click.version_option(__version__, "--version", prog_name="hbt-conformance")
+@click.argument("patterns", nargs=-1, metavar="[FILTER]...")
+@click.pass_context
+def cli(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ctx: click.Context,
+    binary: Path,
+    corpus_root: Path | None,
+    waivers: Path | None,
+    timeout: float,
+    tz: str | None,
+    jobs: int,
+    list_only: bool,
+    quiet: bool,
+    patterns: tuple[str, ...],
+) -> None:
+    """Run the hbt corpus against an hbt executable.
+
+    FILTER selects fixtures by name, substring or glob; every fixture runs if
+    none is given.
+    """
+    options = Options(binary, corpus_root, waivers, timeout, tz, jobs, list_only, quiet, patterns)
+    ctx.exit(run(options, _utf8(sys.stdout)))

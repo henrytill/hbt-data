@@ -29,7 +29,7 @@ The header counts the fixtures the run selected, on both sides: the corpus direc
 
 Installed via the flake, the harness carries only the code — the fixtures are the other half of this repository and would rebuild the package every time one changed — so `nix run github:henrytill/hbt-data -- --binary … --corpus …` needs `--corpus` pointed at a checkout. Run from a checkout and it finds them itself.
 
-Requires Python 3.11 and PyYAML, and nothing else — no Nix, no build step, no environment variables. The corpus is found by relative path from the package, so this works from a bare checkout, and each implementation vendors this repository as a submodule at `hbt-data/`.
+Requires Python 3.11, PyYAML and Click, and nothing else — no Nix, no build step, no environment variables. The corpus is found by relative path from the package, so this works from a bare checkout, and each implementation vendors this repository as a submodule at `hbt-data/`.
 
 | flag | |
 |---|---|
@@ -37,6 +37,7 @@ Requires Python 3.11 and PyYAML, and nothing else — no Nix, no build step, no 
 | `filter…` | fixture names, substrings or globs; all fixtures if omitted |
 | `-l`, `--list` | list the selected fixtures and exit |
 | `-q`, `--quiet` | report only what did not pass |
+| `-h`, `--help` | the flags, from the command itself |
 | `--waivers FILE` | fixture names this caller expects to fail |
 | `--corpus DIR` | test a corpus other than this checkout |
 | `--tz ZONE` | run under this timezone instead of the ambient one |

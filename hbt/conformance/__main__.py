@@ -1,5 +1,5 @@
-import sys
+from hbt.conformance.cli import cli
 
-from hbt.conformance.cli import main
-
-sys.exit(main())
+# Click supplies every parameter from the command line; pylint reads the
+# decorated function's signature and sees nine missing arguments.
+cli(prog_name="hbt-conformance")  # pylint: disable=no-value-for-parameter

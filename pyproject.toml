@@ -11,7 +11,7 @@ requires-python = ">=3.11"
 # PyYAML and nothing else. None of the four implementations can emit JSON --
 # `-t` accepts only html and yaml in all four -- so the harness parses YAML for
 # both sides of every comparison.
-dependencies = ["PyYAML>=6.0"]
+dependencies = ["click>=8.1", "PyYAML>=6.0"]
 
 [project.optional-dependencies]
 # types-PyYAML because PyYAML ships no py.typed and mypy runs strict.
@@ -25,7 +25,7 @@ dev = [
 ]
 
 [project.scripts]
-hbt-conformance = "hbt.conformance.cli:main"
+hbt-conformance = "hbt.conformance.cli:cli"
 
 # `hbt` is a PEP 420 namespace portion -- it has no __init__.py -- so flit
 # cannot infer the module from the distribution name, which would give it

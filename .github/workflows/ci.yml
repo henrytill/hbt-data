@@ -77,10 +77,10 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python }}
-      # PyYAML and nothing else: the README promises the harness runs from a
-      # bare checkout with no Nix, no build step and no environment, and this
-      # job is what keeps that true.
-      - run: python -m pip install pyyaml
+      # The two runtime dependencies and nothing else: the README promises
+      # the harness runs from a bare checkout with no Nix, no build step and
+      # no environment, and this job is what keeps that true.
+      - run: python -m pip install click pyyaml
       # Under the C locale, which is what a LANG-less container gives you and
       # what two decoding bugs hid behind: text-mode pipes and stdout both
       # default to ASCII there, and four fixtures are not ASCII.
