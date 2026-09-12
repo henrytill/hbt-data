@@ -62,6 +62,17 @@ class UnknownSidecar(CorpusError):
     """
 
 
+class CollidingInputs(CorpusError):
+    """Two inputs in one directory that differ only in their extension.
+
+    A fixture is named by its stem, so ``a.input.md`` and ``a.input.html``
+    would both be ``markdown/a``: ``--list`` prints the name twice, one
+    waiver silently covers both, and a failure cannot say which input
+    produced it.  Renaming one is the fix; keying names on the full filename
+    instead would put an extension into every waiver and every filter.
+    """
+
+
 class ContradictoryExpectations(CorpusError):
     """A fixture that must be rejected and also pins what it parses to.
 
@@ -139,10 +150,15 @@ class Corpus:
         """
         root = (root or _root()).resolve()
         found: list[Fixture] = []
+        inputs: dict[str, Path] = {}
         for path in sorted(root.rglob(f"*{INPUT_SUFFIX}.*")):
             if ".git" in path.parts:
                 continue
             stem = path.parent / path.name[: path.name.index(INPUT_SUFFIX)]
+            name = str(stem.relative_to(root))
+            first = inputs.setdefault(name, path)
+            if first != path:
+                raise CollidingInputs(f"{name}: {first.name} and {path.name} are two fixtures with one name")
             sidecars = _sidecars(stem)
 
             unknown = sorted(set(sidecars) - RECOGNIZED_SUFFIXES)
@@ -160,7 +176,7 @@ class Corpus:
                 )
             found.append(
                 Fixture(
-                    name=str(stem.relative_to(root)),
+                    name=name,
                     input_path=path,
                     expected=outputs,
                     error=(

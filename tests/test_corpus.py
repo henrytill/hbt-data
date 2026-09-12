@@ -14,7 +14,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from hbt.conformance.corpus import ContradictoryExpectations, Corpus, UnknownSidecar, categories, coverage
+from hbt.conformance.corpus import (
+    CollidingInputs,
+    ContradictoryExpectations,
+    Corpus,
+    UnknownSidecar,
+    categories,
+    coverage,
+)
 
 
 class Discovery(unittest.TestCase):
@@ -52,6 +59,14 @@ class Discovery(unittest.TestCase):
         self.write("markdown/a.input.md")
         self.write("markdown/a.expected.yml")
         with self.assertRaisesRegex(UnknownSidecar, "a.expected.yml"):
+            Corpus.discover(self.root)
+
+    def test_two_inputs_may_not_share_one_name(self) -> None:
+        """One name for two cases makes a waiver and a failure ambiguous."""
+        self.write("markdown/a.input.md")
+        self.write("markdown/a.input.html")
+        self.write("markdown/a.expected.yaml")
+        with self.assertRaisesRegex(CollidingInputs, "markdown/a"):
             Corpus.discover(self.root)
 
     def test_a_rejection_fixture_may_not_also_pin_an_output(self) -> None:
