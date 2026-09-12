@@ -1,0 +1,75 @@
+[build-system]
+requires = ["flit_core >=3.11,<5"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "hbt-conformance"
+dynamic = ["version", "description"]
+readme = "README.md"
+authors = [{ name = "Henry Till", email = "henrytill@gmail.com" }]
+requires-python = ">=3.11"
+# PyYAML and nothing else. None of the four implementations can emit JSON --
+# `-t` accepts only html and yaml in all four -- so the harness parses YAML for
+# both sides of every comparison.
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+# types-PyYAML because PyYAML ships no py.typed and mypy runs strict.
+dev = [
+    "black>=23.3.0",
+    "flake8>=6.0.0",
+    "isort>=5.13.2",
+    "mypy>=1.8.0",
+    "pylint>=3.3.4",
+    "types-PyYAML>=6.0",
+]
+test = []
+
+[project.scripts]
+hbt-conformance = "hbt.conformance.cli:main"
+
+# `hbt` is a PEP 420 namespace portion -- it has no __init__.py -- so flit
+# cannot infer the module from the distribution name, which would give it
+# `hbt_conformance`. The dotted name names the package inside the namespace,
+# and it is the same namespace hbt-analysis puts `hbt.bench` in, so the
+# cross-implementation harness there can import this normalizer rather than
+# reimplement it.
+[tool.flit.module]
+name = "hbt.conformance"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+known_first_party = ["hbt"]
+line_length = 120
+
+[tool.mypy]
+strict = true
+check_untyped_defs = true
+warn_redundant_casts = false
+# `hbt` is a namespace portion with no __init__.py, so mypy cannot tell where
+# the package root is: it would read hbt/conformance/cli.py as both
+# `conformance.cli` and `hbt.conformance.cli` and refuse. This makes the
+# invocation directory the root.
+explicit_package_bases = true
+
+[tool.pylint]
+# The counterpart of mypy's explicit_package_bases: without it pylint reads
+# hbt/conformance as the top-level module `conformance` and cannot resolve
+# `hbt.conformance`.
+source-roots = ["."]
+max-line-length = 120
+disable = [
+    "C0114", # missing-module-docstring, too much
+    "C0115", # missing-class-docstring, too much
+    "C0301", # line-too-long, we use black for formatting
+    "C0414", # useless-import-alias, we use aliases for type checking
+    "R0903", # too-few-public-methods, come on
+    "R0913", # too-many-arguments, i know
+    "R0917", # too-many-positional-arguments, you already told me thanks
+]
+
+[tool.pyright]
+strict = ["hbt"]
