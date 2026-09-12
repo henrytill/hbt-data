@@ -22,7 +22,6 @@ import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
 INPUT_SUFFIX = ".input"
 INPUT_MARKER = f"{INPUT_SUFFIX}."
@@ -312,34 +311,3 @@ class Corpus:
         if not patterns:
             return list(self.fixtures)
         return [f for f in self.fixtures if any(fnmatch.fnmatch(f.name, f"*{p}*") for p in patterns)]
-
-
-def coverage(fixtures: Sequence[Fixture]) -> dict[str, int]:
-    """How many of ``fixtures`` pin each output format.
-
-    Over the fixtures actually selected rather than over the whole corpus:
-    the count is reported beside a run, and a run that was filtered down to
-    one markdown case has not checked nine HTML expectations.
-    """
-    counts = {fmt: 0 for fmt in EXPECTED_SUFFIXES}
-    for fixture in fixtures:
-        for fmt in fixture.expected:
-            counts[fmt] += 1
-    return counts
-
-
-def categories(fixtures: Sequence[Fixture]) -> dict[str, int]:
-    """How many of ``fixtures`` come from each top-level corpus directory.
-
-    The input side of the same question :func:`coverage` answers for outputs,
-    and not derivable from it: the corpus directories are ``html``,
-    ``markdown`` and ``pinboard``, while the output formats are ``yaml`` and
-    ``html``, so "9 html" alone says nothing about whether the markdown
-    fixtures ran.  ``pinboard/xml`` and ``pinboard/json`` count as one
-    category, which is how the parsers are organized.
-    """
-    counts: dict[str, int] = {}
-    for fixture in fixtures:
-        category = fixture.name.split("/", 1)[0]
-        counts[category] = counts.get(category, 0) + 1
-    return counts
