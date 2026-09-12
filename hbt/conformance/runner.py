@@ -83,6 +83,8 @@ class Result:
     outcome: Outcome
     reason: str | None = None
     differences: tuple[Difference, ...] = field(default_factory=tuple)
+    corpus_error: bool = False
+    """Whether the failure is the corpus's rather than the implementation's."""
 
     def waive(self, reason: str) -> Result:
         """Reinterpret this result as one the caller expected to fail.
@@ -92,7 +94,16 @@ class Result:
         repository stays free of knowledge about who is currently broken.
         ``reason`` is the waiver's own record of why, carried into the report
         so a waived fixture names its owner instead of going quiet.
+
+        A corpus error is never waivable.  It is the one failure that is not
+        a statement about the implementation being run, so a waiver in one
+        implementation's repository must not be able to silence a broken
+        expectation file in this one -- that would let a corrupt fixture ride
+        along at exit 0, which is the whole distinction :func:`_compare`
+        draws the corpus errors out to make.
         """
+        if self.corpus_error:
+            return self
         if self.outcome is Outcome.FAIL:
             return Result(self.fixture, Outcome.XFAIL, f"{reason} [{self.reason}]", self.differences)
         if self.outcome is Outcome.PASS:
@@ -150,7 +161,8 @@ def check(fixture: Fixture, binary: Path, timeout: float = DEFAULT_TIMEOUT, tz: 
 
     differences, failed, corpus_errors = _compare(fixture, formats, runs)
     if corpus_errors:
-        return Result(fixture, Outcome.FAIL, f"corpus error: {', '.join(corpus_errors)}", tuple(differences))
+        reason = f"corpus error: {', '.join(corpus_errors)}"
+        return Result(fixture, Outcome.FAIL, reason, tuple(differences), corpus_error=True)
     if differences:
         return Result(fixture, Outcome.FAIL, _summarize(failed, differences), tuple(differences))
     return Result(fixture, Outcome.PASS)
