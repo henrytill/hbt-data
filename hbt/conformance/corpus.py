@@ -153,6 +153,20 @@ class Fixture:
         return self.error is not None
 
     @property
+    def stem(self) -> str:
+        """The fixture's own basename, without its directory."""
+        return self.name.rsplit("/", 1)[-1]
+
+    def suffix(self, path: Path) -> str:
+        """What one of this fixture's files adds to its stem, e.g. ``.input.md``.
+
+        The naming scheme lives in this module, so the arithmetic that undoes
+        it does too: spelled anywhere else, getting it wrong is silent -- a
+        mangled report column rather than an exception.
+        """
+        return path.name[len(self.stem) :]
+
+    @property
     def files(self) -> tuple[Path, ...]:
         """Everything this fixture pins, in a stable order."""
         pinned = [self.expected[fmt] for fmt in sorted(self.expected)]

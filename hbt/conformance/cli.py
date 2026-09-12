@@ -81,11 +81,6 @@ def _header(corpus: Corpus, selected: Sequence[Fixture], binary: Path, tz: str |
     return "\n".join(f"{key.ljust(width)}  {value}" for key, value in rows)
 
 
-def _suffix(fixture: Fixture, path: Path) -> str:
-    """What ``path`` adds to the fixture's stem, e.g. ``.input.md``."""
-    return path.name[len(Path(fixture.name).name) :]
-
-
 def report(results: Sequence[Result], quiet: bool, out: TextIO) -> int:
     """Print one line per fixture, with any differences beneath it.
 
@@ -120,18 +115,20 @@ def report(results: Sequence[Result], quiet: bool, out: TextIO) -> int:
     """
     rows = [
         (
-            result.outcome.value.upper(),
-            result.fixture.name,
-            _suffix(result.fixture, result.fixture.input_path),
-            ",".join(_suffix(result.fixture, path) for path in result.fixture.files),
+            (
+                result.outcome.value.upper(),
+                result.fixture.name,
+                result.fixture.suffix(result.fixture.input_path),
+                ",".join(result.fixture.suffix(path) for path in result.fixture.files),
+            ),
             result.reason or "",
             result.differences,
         )
         for result in results
         if not (result.outcome is Outcome.PASS and quiet)
     ]
-    widths = [max((len(row[i]) for row in rows), default=0) for i in range(4)]
-    for *cells, reason, differences in rows:
+    widths = [max(map(len, column)) for column in zip(*(cells for cells, _, _ in rows))] if rows else []
+    for cells, reason, differences in rows:
         line = "  ".join(cell.ljust(width) for cell, width in zip(cells, widths))
         print(f"{line}  {reason}".rstrip(), file=out)
         for difference in differences:
