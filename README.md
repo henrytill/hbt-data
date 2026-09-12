@@ -17,7 +17,7 @@ python3 -m hbt.conformance --binary path/to/hbt
 Runs every fixture against one `hbt` executable and reports what does not conform:
 
 ```
-corpus 0523150 • 37 fixture(s) • binary result-hbt-go/bin/hbt
+corpus 0523150 • 37 fixture(s) (9 html, 37 yaml) • binary result-hbt-go/bin/hbt
 37 pass
 ```
 
@@ -34,6 +34,7 @@ Requires Python 3.11 and PyYAML, and nothing else — no Nix, no build step, no 
 | `--waivers FILE` | fixture names this caller expects to fail |
 | `--corpus DIR` | test a corpus other than this checkout |
 | `--tz ZONE` | run under this timezone instead of the ambient one |
+| `-j`, `--jobs` | fixtures to run at once (default 8) |
 
 Single-case selection matters: it is what replaces `cargo test -p hbt-test --test parsing markdown::test_basic` and its three equivalents.
 
@@ -48,7 +49,21 @@ The harness does not pin `TZ`. All four implementations are timezone-invariant t
 
 ### Waivers
 
-A waiver file lists fixture names, one per line, `#` for comments. A waived fixture that fails is reported `XFAIL` and does not fail the run; a waived fixture that passes is reported `XPASS` and does. Waivers live in the implementations, not here: a fixture can then land in the corpus before four parsers are fixed, and this repository stays free of knowledge about who is currently broken.
+A waiver file lists fixture names, one per line, with the reason after `#`:
+
+```
+markdown/zero_timestamp  # hbt-hs#31 — zero createdAt is discarded
+```
+
+The reason is kept, not discarded. A waiver is authored in an implementation's repository and read here, so a bare name would be a suppression with no recorded owner or exit condition — and the concern is what a conformance matrix has to key on. A waived fixture that fails is reported `XFAIL` with its reason and does not fail the run; a waived fixture that passes is reported `XPASS` and does. Waivers live in the implementations, not here: a fixture can land in the corpus before four parsers are fixed, and this repository stays free of knowledge about who is currently broken.
+
+### Rejection fixtures
+
+An input that every implementation must *refuse* carries `<name>.expected.error` instead of an expected document, holding the reason it must be refused. Nothing in the corpus uses this yet — the shape is still being settled in [#11](https://github.com/henrytill/hbt-data/issues/11).
+
+### Sidecars
+
+A `<name>.expected.*` file in a format the harness does not check is an error, not something ignored. There is no manifest — the filenames are the only statement of what the corpus contains, which is the mechanism being consolidated out of four languages — so a typo has to be loud rather than quietly downgrading a fixture to checking nothing.
 
 ### What "matches" means
 
