@@ -67,9 +67,20 @@ The reason is kept, not discarded. A waiver is authored in an implementation's r
 
 An input that every implementation must *refuse* carries `<name>.expected.error` instead of an expected document, holding the reason it must be refused. Nothing in the corpus uses this yet — the shape is still being settled in [#11](https://github.com/henrytill/hbt-data/issues/11).
 
-### Sidecars
+### What discovery refuses
 
-A `<name>.expected.*` file in a format the harness does not check is an error, not something ignored. There is no manifest — the filenames are the only statement of what the corpus contains, which is the mechanism being consolidated out of four languages — so a typo has to be loud rather than quietly downgrading a fixture to checking nothing.
+There is no manifest — the filenames are the only statement of what the corpus contains, which is the mechanism being consolidated out of four languages. So a fixture whose files disagree with each other is an error rather than a case that quietly checks less than it looks like it does. Discovery refuses:
+
+| | |
+|---|---|
+| `<name>.expected.<unknown>` | no output format checks it, so it would assert nothing |
+| an input with no `<name>.expected.*` | asserts only that the parser exited zero |
+| a `<name>.expected.*` with no input | discovery walks the inputs, so nothing would read it |
+| `.expected.error` beside an expected document | the rejection is checked first, so the document is never read |
+| an input whose extension the directory does not hold | the extension picks the parser, the directory picks the report column |
+| two inputs sharing one stem | one fixture name for two cases makes a waiver and a failure ambiguous |
+
+The same rules hbt-ocaml's `input_to_dir` and hbt-hs's `discover` enforce, in the one place all four now share.
 
 ### What "matches" means
 
