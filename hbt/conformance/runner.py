@@ -6,8 +6,10 @@ not pass ``-f``: the four implementations spell the markdown format
 differently (``md`` in hbt-rs, ``markdown`` in the other three), while all four
 agree on detecting the format from the file extension, so extension detection
 is both the portable route and the one the corpus filenames were built for.
-That divergence is a real one and is tracked separately; it is worked around
-here rather than papered over.
+That divergence is a real one -- there is no `-f` value that works on all
+four -- and is tracked as henrytill/hbt-data#16.  It is worked around here
+rather than papered over, and the cost of the workaround is that conformance
+never exercises the `-f` path at all.
 
 **The harness does not pin ``TZ``.**  hbt-ocaml's dune action pinned it to UTC,
 and it would have been easy to inherit that here for all four.  But all four
