@@ -323,7 +323,12 @@ class Run:
 
     @property
     def ok(self) -> bool:
-        """Whether the run conformed: every outcome acceptable, and no waiver stale."""
+        """Whether the run conformed: every outcome acceptable, and no waiver stale.
+
+        A run over no fixtures conforms, vacuously, and its summary is empty.
+        Whether an empty selection is a mistake depends on why it is empty,
+        which only the caller knows -- see :func:`check_corpus`.
+        """
         return all(r.outcome.ok for r in self.results) and not self.stale
 
     def summary(self) -> str:
@@ -347,6 +352,15 @@ def check_corpus(  # pylint: disable=too-many-arguments,too-many-positional-argu
     Staleness is judged against the whole corpus rather than the selection, so
     a filtered run does not report a waiver for a fixture it merely did not
     run.
+
+    An empty ``fixtures`` is not refused, unlike an empty corpus, and the
+    :class:`Run` it returns is ``ok``.  The two are different questions.  A
+    corpus with no fixtures is always a broken checkout or a wrong path, so
+    :meth:`Corpus.discover` refuses it for every caller.  A selection with no
+    fixtures is a statement about filters: the command treats it as a usage
+    error, while a caller checking several corpora pinned at different
+    revisions may legitimately select nothing from one of them.  So refusing
+    it is the caller's decision, made before calling this.
     """
     waived = waivers or {}
     selected = corpus.fixtures if fixtures is None else fixtures
