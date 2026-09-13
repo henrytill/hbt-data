@@ -61,6 +61,31 @@ python3 -m hbt.conformance --binary path/to/hbt markdown/basic
 python3 -m hbt.conformance --binary path/to/hbt 'html/*'
 ```
 
+### From an implementation's flake
+
+An implementation takes this flake as a path input on its corpus submodule, so the submodule stays the one pin. Relative path inputs lock relative to their parent rather than by hash, so a submodule bump needs no relock:
+
+```nix
+inputs.hbt-data = {
+  url = "path:./test-data";
+  inputs.nixpkgs.follows = "nixpkgs";
+  inputs.flake-utils.follows = "flake-utils";
+};
+```
+
+The implementation's flake has to set `inputs.self.submodules = true` for the submodule to be part of its source. Then:
+
+```nix
+checks.conformance = hbt-data.lib.${system}.check {
+  binary = "${packages.hbt}/bin/hbt";
+  # waivers = ./conformance.waivers;  # optional
+  # tz = "America/New_York";          # optional
+};
+devShells.default = pkgs.mkShell { packages = [ hbt-data.packages.${system}.python ]; };
+```
+
+The check runs the packaged harness against a copy of just the fixtures. That copy has no `.git`, so its header reports the corpus revision as `unknown`. `packages.python` is a Python carrying the harness and its dependencies, so `python3 -m hbt.conformance` works in a dev shell without the implementation naming Click or PyYAML.
+
 ### Timezones
 
 The harness does not pin `TZ`. All four implementations are timezone-invariant today, and a harness that pins the zone cannot notice that property being lost — so the ambient zone is what runs, and a developer outside UTC is checking something a UTC CI runner cannot. `--tz` forces a zone when reproducing a failure that only appears in one.
