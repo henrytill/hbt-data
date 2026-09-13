@@ -154,6 +154,13 @@ class Verdict(unittest.TestCase):
         self.assertEqual(checked.stale, ())
         self.assertEqual(len(checked.results), 1)
 
+    def test_an_empty_selection_runs_nothing_and_conforms(self) -> None:
+        """What check_corpus promises: refusing an empty selection is the caller's decision."""
+        checked = check_corpus(self.corpus, self.stub(DOCUMENT), [])
+        self.assertEqual(checked.results, ())
+        self.assertTrue(checked.ok)
+        self.assertEqual(checked.summary(), "")
+
     def test_the_summary_counts_each_outcome_that_occurred(self) -> None:
         other = DOCUMENT.replace("example.com", "example.org")
         checked = check_corpus(self.corpus, self.stub(other), waivers={"markdown/a": "broken"})
