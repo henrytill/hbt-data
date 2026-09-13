@@ -57,10 +57,77 @@
             ];
           };
         };
+
+        # The fixtures, the half the package leaves out. Selected by the names
+        # the harness walks for (_walk in hbt/conformance/corpus.py) rather than
+        # by directory, so a new category cannot be left out of the copy
+        # unnoticed.
+        corpus = pkgs.lib.fileset.toSource {
+          root = ./.;
+          fileset = pkgs.lib.fileset.fileFilter (
+            file: pkgs.lib.hasInfix ".input." file.name || pkgs.lib.hasInfix ".expected." file.name
+          ) ./.;
+        };
+
+        # The conformance check, for an implementation's flake to call; the
+        # README says how to take this flake as an input. A function rather
+        # than a callPackage file: callPackage fills any argument that names an
+        # attribute of pkgs, and `tz` would be nixpkgs' tz package.
+        check =
+          {
+            # The hbt executable to hold to the corpus.
+            binary,
+            # A waiver file in the format the README describes, or null.
+            waivers ? null,
+            # A timezone to force, or null for the sandbox's own.
+            tz ? null,
+          }:
+          let
+            # Interpolated, not left for escapeShellArgs to stringify: toString
+            # on a path neither copies it to the store nor records a
+            # dependency, so a path literal would be missing from the sandbox.
+            args = [
+              "--binary"
+              "${binary}"
+              "--corpus"
+              corpus
+            ]
+            ++ pkgs.lib.optionals (waivers != null) [
+              "--waivers"
+              "${waivers}"
+            ]
+            ++ pkgs.lib.optionals (tz != null) [
+              "--tz"
+              tz
+            ];
+          in
+          pkgs.runCommand "hbt-conformance" { } ''
+            ${hbtConformance}/bin/hbt-conformance ${pkgs.lib.escapeShellArgs args}
+            touch $out
+          '';
       in
       {
         packages.hbt-conformance = hbtConformance;
         packages.default = hbtConformance;
+        packages.python = pkgs.python3.withPackages (_: [ hbtConformance ]);
+
+        lib.check = check;
+
+        # The check is exercised here before any implementation calls it.
+        # There is no hbt in this repository, so a stub stands in that answers
+        # every fixture with its own expectation, except the one the waiver
+        # file names: the run conforms only if that file reaches the sandbox.
+        # The waivers are a path literal, the way an implementation passes
+        # them, because a path is what fails to be copied if it is stringified
+        # rather than interpolated.
+        checks.conformance = check {
+          binary = pkgs.writeShellScript "hbt-stub" ''
+            # hbt -t FORMAT INPUT
+            case "$3" in */markdown/basic.input.md) exit 1 ;; esac
+            cat "''${3%.input.*}.expected.$2"
+          '';
+          waivers = ./tests/stub.waivers;
+        };
 
         apps.default = {
           type = "app";
