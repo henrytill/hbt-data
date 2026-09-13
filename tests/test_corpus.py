@@ -20,6 +20,7 @@ from hbt.conformance.corpus import (
     CollidingInputs,
     ContradictoryExpectations,
     Corpus,
+    EmptyCorpus,
     IncompleteFixture,
     MisfiledInput,
     NoCorpus,
@@ -114,6 +115,12 @@ class Discovery(unittest.TestCase):
         self.write("markdown/a[1].expected.yaml")
         (fixture,) = Corpus.discover(self.root).fixtures
         self.assertEqual(set(fixture.expected), {"yaml"})
+
+    def test_a_tree_holding_no_fixtures_is_refused(self) -> None:
+        """A run over nothing has nothing that can fail, so it would pass."""
+        (self.root / "markdown").mkdir()
+        with self.assertRaisesRegex(EmptyCorpus, "no fixtures under"):
+            Corpus.discover(self.root)
 
     def test_a_sidecar_does_not_leak_between_fixtures_sharing_a_prefix(self) -> None:
         self.write("markdown/a.input.md")

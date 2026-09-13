@@ -18,14 +18,16 @@ from hbt.conformance.corpus import (
     ContradictoryExpectations,
     Corpus,
     CorpusError,
+    EmptyCorpus,
     Fixture,
     IncompleteFixture,
     MisfiledInput,
     NoCorpus,
     UnknownSidecar,
+    revision,
 )
 from hbt.conformance.normalize import Difference, NormalizationError, compare, compare_html, normalize
-from hbt.conformance.runner import Outcome, Result, check, check_all
+from hbt.conformance.runner import Outcome, Result, Run, check, check_all, check_corpus, read_waivers
 from hbt.conformance.yaml_io import load_yaml
 
 __all__ = [
@@ -34,6 +36,7 @@ __all__ = [
     "Corpus",
     "CorpusError",
     "Difference",
+    "EmptyCorpus",
     "Fixture",
     "IncompleteFixture",
     "MisfiledInput",
@@ -41,11 +44,15 @@ __all__ = [
     "NormalizationError",
     "Outcome",
     "Result",
+    "Run",
     "UnknownSidecar",
     "check",
     "check_all",
+    "check_corpus",
     "compare",
     "compare_html",
     "load_yaml",
     "normalize",
+    "read_waivers",
+    "revision",
 ]

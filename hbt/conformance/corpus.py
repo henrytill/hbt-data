@@ -82,6 +82,17 @@ class NoCorpus(CorpusError):
     """
 
 
+class EmptyCorpus(CorpusError):
+    """A tree that holds no fixtures at all.
+
+    A run over nothing has nothing that can fail, so it would pass.  That is
+    what a submodule that was never checked out, or a ``--corpus`` pointing
+    one directory too high, looks like -- and it has to be refused here, where
+    every caller discovers a corpus, rather than by each caller remembering to
+    check.
+    """
+
+
 class UnknownSidecar(CorpusError):
     """A ``<stem>.expected.*`` file that no output format claims.
 
@@ -332,11 +343,15 @@ class Corpus:
         """Every fixture under ``root``, sorted by name.
 
         Raises :class:`UnknownSidecar` if a fixture carries an expectation in
-        a format the harness does not know how to check.
+        a format the harness does not know how to check, and
+        :class:`EmptyCorpus` if there are no fixtures to check at all.
         """
         root = (root or _root()).resolve()
         groups = _walk(root)
-        return cls(root=root, fixtures=tuple(_fixture(group, root) for _, group in sorted(groups.items())))
+        fixtures = tuple(_fixture(group, root) for _, group in sorted(groups.items()))
+        if not fixtures:
+            raise EmptyCorpus(f"no fixtures under {root} -- is that a corpus checkout?")
+        return cls(root=root, fixtures=fixtures)
 
     def select(self, patterns: list[str]) -> list[Fixture]:
         """Fixtures whose name matches any of ``patterns``.

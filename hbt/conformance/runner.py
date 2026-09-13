@@ -25,6 +25,7 @@ from __future__ import annotations
 import enum
 import os
 import subprocess
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,7 +33,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 import yaml
 
-from hbt.conformance.corpus import Fixture
+from hbt.conformance.corpus import Corpus, Fixture
 from hbt.conformance.normalize import Difference, NormalizationError, compare_html, diff, normalize
 from hbt.conformance.yaml_io import load_yaml
 
@@ -109,6 +110,35 @@ class Result:
         if self.outcome is Outcome.PASS:
             return Result(self.fixture, Outcome.XPASS, f"{reason} -- but it passes; drop the waiver")
         return self
+
+    def detail(self) -> list[str]:
+        """The differences behind this result, as lines for a report to indent.
+
+        Unindented, because where they sit is the report's business: beneath a
+        row naming the fixture in one, beneath a cell naming the implementation
+        in another.
+        """
+        return [line for difference in self.differences for line in difference.render().splitlines()]
+
+
+def read_waivers(path: Path) -> dict[str, str]:
+    """Fixture names a caller expects to fail, mapped to why.
+
+    One per line, with the reason after ``#``.  The reason is kept rather than
+    discarded: a waiver file is authored in an implementation's repository and
+    read here, so a bare name would be a suppression with no recorded owner or
+    exit condition -- and the concern it belongs to is what a conformance
+    matrix has to key on.
+
+    This format is a contract with four other repositories, which is why it is
+    defined beside the runner that applies it rather than in the command line.
+    """
+    waivers: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        name, _, reason = line.partition("#")
+        if name.strip():
+            waivers[name.strip()] = reason.strip() or "no reason recorded"
+    return waivers
 
 
 def _run(binary: Path, fixture: Fixture, to: str, timeout: float, tz: str | None) -> subprocess.CompletedProcess[bytes]:
@@ -270,3 +300,56 @@ def check_all(
     with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
         checked = pool.map(run_one, fixtures)
         return [r.waive(expected_to_fail[r.fixture.name]) if r.fixture.name in expected_to_fail else r for r in checked]
+
+
+@dataclass(frozen=True)
+class Run:
+    """One executable held to one corpus, with everything that decides the verdict.
+
+    A record rather than rules left in a command's body: the command line, the
+    cross-implementation matrix in hbt-analysis and any machine-readable report
+    all need the same verdict, and each restating how it is reached is how they
+    come to disagree about a fixture.
+    """
+
+    corpus: Corpus
+    results: tuple[Result, ...]
+    stale: tuple[str, ...]
+    """Waivers naming no fixture in the corpus.
+
+    A stale waiver fails the run: it is either a suppression whose fixture has
+    gone, or a typo that suppresses nothing while looking as though it does.
+    """
+
+    @property
+    def ok(self) -> bool:
+        """Whether the run conformed: every outcome acceptable, and no waiver stale."""
+        return all(r.outcome.ok for r in self.results) and not self.stale
+
+    def summary(self) -> str:
+        """How many fixtures ended each way, e.g. ``36 pass, 1 xfail``."""
+        counts = Counter(r.outcome for r in self.results)
+        return ", ".join(f"{counts[o]} {o.value}" for o in Outcome if counts[o])
+
+
+def check_corpus(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    corpus: Corpus,
+    binary: Path,
+    fixtures: Sequence[Fixture] | None = None,
+    waivers: Mapping[str, str] | None = None,
+    timeout: float = DEFAULT_TIMEOUT,
+    tz: str | None = None,
+    jobs: int = 8,
+) -> Run:
+    """Check ``fixtures`` -- all of ``corpus`` if not given -- and reach a verdict.
+
+    The entry point for holding an implementation to the corpus from Python.
+    Staleness is judged against the whole corpus rather than the selection, so
+    a filtered run does not report a waiver for a fixture it merely did not
+    run.
+    """
+    waived = waivers or {}
+    selected = corpus.fixtures if fixtures is None else fixtures
+    results = check_all(selected, binary, timeout, tz, jobs, waived)
+    stale = tuple(sorted(set(waived) - {f.name for f in corpus.fixtures}))
+    return Run(corpus, tuple(results), stale)
