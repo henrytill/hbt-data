@@ -114,6 +114,8 @@ black hbt tests && isort hbt tests && flake8 hbt tests && mypy hbt tests && pyli
 
 `hbt` is a [PEP 420](https://peps.python.org/pep-0420/) namespace portion with no `__init__.py`; the importable package is `hbt.conformance`, a sibling of `hbt.bench` in [hbt-analysis](https://github.com/henrytill/hbt-analysis), so the cross-implementation harness there imports this normalizer rather than reimplementing it.
 
+The command is a thin layer over one call. To hold an implementation to the corpus from Python, `check_corpus(corpus, binary, fixtures, waivers)` returns a `Run` carrying the results, the stale waivers, `ok` and `summary()` — every rule that decides whether a run conformed, so a caller renders the verdict rather than restating how it is reached. `read_waivers` reads the waiver file format, `revision` names the corpus revision, and `Result.detail()` renders a failure's differences for a report to indent.
+
 ## Changing behavior
 
 A decision is only real once a fixture pins it. Adding or changing a case is a commit here followed by a submodule bump in each implementation.

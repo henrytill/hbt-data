@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import io
 import sys
-from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Sequence, TextIO, cast
@@ -13,24 +12,7 @@ import click
 
 from hbt.conformance import __version__
 from hbt.conformance.corpus import Corpus, CorpusError, Fixture, revision
-from hbt.conformance.runner import DEFAULT_TIMEOUT, Outcome, Result, check_all
-
-
-def read_waivers(path: Path) -> dict[str, str]:
-    """Fixture names a caller expects to fail, mapped to why.
-
-    One per line, with the reason after ``#``.  The reason is kept rather than
-    discarded: a waiver file is authored in an implementation's repository and
-    read here, so a bare name would be a suppression with no recorded owner or
-    exit condition -- and the concern it belongs to is what a conformance
-    matrix has to key on.
-    """
-    waivers: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        name, _, reason = line.partition("#")
-        if name.strip():
-            waivers[name.strip()] = reason.strip() or "no reason recorded"
-    return waivers
+from hbt.conformance.runner import DEFAULT_TIMEOUT, Outcome, Result, check_corpus, read_waivers
 
 
 @dataclass(frozen=True)
@@ -121,18 +103,17 @@ def report(results: Sequence[Result], quiet: bool, out: TextIO) -> int:
                 ",".join(result.fixture.suffix(path) for path in result.fixture.files),
             ),
             result.reason or "",
-            result.differences,
+            result.detail(),
         )
         for result in results
         if not (result.outcome is Outcome.PASS and quiet)
     ]
     widths = [max(map(len, column)) for column in zip(*(cells for cells, _, _ in rows))] if rows else []
-    for cells, reason, differences in rows:
+    for cells, reason, detail in rows:
         line = "  ".join(cell.ljust(width) for cell, width in zip(cells, widths))
         print(f"{line}  {reason}".rstrip(), file=out)
-        for difference in differences:
-            for line in difference.render().splitlines():
-                print(f"    {line}", file=out)
+        for line in detail:
+            print(f"    {line}", file=out)
     return len(rows)
 
 
@@ -163,10 +144,6 @@ def run(options: Options, out: TextIO) -> int:
         print(f"error: {exc}", file=out)
         return 2
 
-    if not corpus.fixtures:
-        print(f"error: no fixtures under {corpus.root} -- is that a corpus checkout?", file=out)
-        return 2
-
     selected = corpus.select(list(options.patterns))
 
     if options.list_only:
@@ -180,22 +157,19 @@ def run(options: Options, out: TextIO) -> int:
 
     waived = read_waivers(options.waivers) if options.waivers else {}
     print(_header(corpus, selected, options.binary, options.tz), file=out)
-    results = check_all(selected, options.binary, options.timeout, options.tz, options.jobs, waived)
+    checked = check_corpus(corpus, options.binary, selected, waived, options.timeout, options.tz, options.jobs)
     # Blank lines rather than a rule: the report is three blocks -- what ran,
     # what each fixture did, what it adds up to -- and a rule would be a
     # fourth thing for a filter to skip past.
     print(file=out)
-    if report(results, options.quiet, out):
+    if report(checked.results, options.quiet, out):
         print(file=out)
 
-    counts = Counter(r.outcome for r in results)
-    print(", ".join(f"{counts[o]} {o.value}" for o in Outcome if counts[o]), file=out)
-
-    stale = sorted(set(waived) - {f.name for f in corpus.fixtures})
-    for name in stale:
+    print(checked.summary(), file=out)
+    for name in checked.stale:
         print(f"warning: waiver for unknown fixture {name}", file=out)
 
-    return 0 if all(r.outcome.ok for r in results) and not stale else 1
+    return 0 if checked.ok else 1
 
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})

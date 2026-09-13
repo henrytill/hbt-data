@@ -71,6 +71,13 @@ class CommandLine(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("FAIL", output)
 
+    def test_an_empty_corpus_is_a_usage_error(self) -> None:
+        empty = self.root / "empty"
+        (empty / "markdown").mkdir(parents=True)
+        result = self.runner.invoke(cli, ["--corpus", str(empty), "--binary", str(self.binary)])
+        self.assertEqual(result.exit_code, 2)
+        self.assertIn("error: no fixtures under", result.output)
+
     def test_a_missing_binary_is_a_usage_error(self) -> None:
         """Otherwise it is reported once per fixture, about the caller."""
         result = self.runner.invoke(cli, ["--corpus", str(self.root), "--binary", str(self.root / "gone")])
