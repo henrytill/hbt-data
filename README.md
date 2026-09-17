@@ -102,7 +102,7 @@ For a CI job without Nix, `.github/actions/conformance` sets up a Python with `a
     # tz: America/New_York          # optional
 ```
 
-`binary` and `waivers` are resolved against the workspace. The action's Python is kept off the job's `PATH`, so later steps are unaffected by it.
+`binary` and `waivers` are resolved against the workspace. The step fails unless the run conformed, and the harness's exit status is the `status` output: 1 when a fixture did not conform, 2 when the harness could not run. The action's Python is kept off the job's `PATH`, so later steps are unaffected by it.
 
 ### Timezones
 
