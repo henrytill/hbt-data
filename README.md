@@ -86,6 +86,24 @@ devShells.default = pkgs.mkShell { packages = [ hbt-data.packages.${system}.pyth
 
 The check runs the packaged harness against a copy of just the fixtures. That copy has no `.git`, so its header reports the corpus revision as `unknown`. `packages.python` is a Python carrying the harness and its dependencies, so `python3 -m hbt.conformance` works in a dev shell without the implementation naming Click or PyYAML.
 
+### From an implementation's CI
+
+For a CI job without Nix, `.github/actions/conformance` installs Click and PyYAML from apt and runs the harness from the corpus. An implementation reaches it through its corpus submodule, so the gitlink that pins the harness and the fixtures pins the action too, and CI has to check out with submodules:
+
+```yaml
+- uses: actions/checkout@…
+  with:
+    submodules: true
+- run: make all
+- uses: ./testdata/.github/actions/conformance   # the corpus submodule's path
+  with:
+    binary: bin/hbt
+    # waivers: conformance.waivers  # optional
+    # tz: America/New_York          # optional
+```
+
+`binary` and `waivers` are resolved against the workspace. The action needs a Debian or Ubuntu runner, for apt.
+
 ### Timezones
 
 The harness does not pin `TZ`. All four implementations are timezone-invariant today, and a harness that pins the zone cannot notice that property being lost — so the ambient zone is what runs, and a developer outside UTC is checking something a UTC CI runner cannot. `--tz` forces a zone when reproducing a failure that only appears in one.
