@@ -116,8 +116,7 @@
         # The check is exercised here before any implementation calls it,
         # against tests/hbt-stub: the run conforms only if the waiver file
         # reaches the sandbox. Both are path literals, the way an
-        # implementation passes them, because a path is what fails to be
-        # copied if it is stringified rather than interpolated.
+        # implementation passes them.
         checks.conformance = check {
           binary = ./tests/hbt-stub;
           waivers = ./tests/stub.waivers;

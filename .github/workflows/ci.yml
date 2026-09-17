@@ -44,9 +44,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # The action as an implementation calls it, against the stub that fails
-      # markdown/basic: with the waiver the run conforms, and without it the
-      # step has to fail, or the action is not reporting the harness's verdict.
+      # The action as an implementation calls it, against tests/hbt-stub: with
+      # the waiver it conforms, and without it the step has to fail.
       - uses: ./.github/actions/conformance
         with:
           binary: tests/hbt-stub
