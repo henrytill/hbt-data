@@ -10,12 +10,8 @@ inputs:
     required: true
   waivers:
     description: A waiver file, relative to the workspace or absolute.
-    required: false
-    default: ""
   tz:
     description: A timezone to force instead of the runner's own.
-    required: false
-    default: ""
 
 runs:
   using: composite
