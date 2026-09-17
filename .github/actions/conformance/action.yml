@@ -1,0 +1,40 @@
+name: hbt conformance
+description: >-
+  Hold an hbt executable to this corpus with the conformance harness, without
+  Nix. Run it from the implementation's corpus submodule, so the submodule
+  stays the one pin on the harness, the corpus and this action.
+
+inputs:
+  binary:
+    description: The hbt executable to test, relative to the workspace or absolute.
+    required: true
+  waivers:
+    description: A waiver file, relative to the workspace or absolute.
+    required: false
+    default: ""
+  tz:
+    description: A timezone to force instead of the runner's own.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    # The harness's two dependencies, from the runner's Python. Debian and
+    # Ubuntu runners only, which is what all four implementations use.
+    - shell: bash
+      run: sudo apt-get update && sudo apt-get install -y --no-install-recommends python3-click python3-yaml
+    # Paths resolve against the workspace before changing into the corpus,
+    # which is where `python3 -m hbt.conformance` finds both the package and
+    # the fixtures.
+    - shell: bash
+      env:
+        BINARY: ${{ inputs.binary }}
+        WAIVERS: ${{ inputs.waivers }}
+        ZONE: ${{ inputs.tz }}
+      run: |
+        args=(--binary "$(realpath -e -- "$BINARY")")
+        if [[ -n $WAIVERS ]]; then args+=(--waivers "$(realpath -e -- "$WAIVERS")"); fi
+        if [[ -n $ZONE ]]; then args+=(--tz "$ZONE"); fi
+        cd -- "$GITHUB_ACTION_PATH/../../.."
+        python3 -m hbt.conformance "${args[@]}"
