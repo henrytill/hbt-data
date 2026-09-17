@@ -40,7 +40,7 @@ hbt-conformance --binary path/to/hbt | awk '$1 == "FAIL" {print $2" # why"}'  # 
 
 Installed via the flake, the harness carries only the code — the fixtures are the other half of this repository and would rebuild the package every time one changed — so `nix run github:henrytill/hbt-data -- --binary … --corpus …` needs `--corpus` pointed at a checkout. Run from a checkout and it finds them itself.
 
-Requires Python 3.11, PyYAML and Click, and nothing else — no Nix, no build step, no environment variables. The corpus is found by relative path from the package, so this works from a bare checkout, and each implementation vendors this repository as a submodule at `hbt-data/`.
+Requires Python 3.11, PyYAML and Click, and nothing else — no Nix, no build step, no environment variables. The corpus is found by relative path from the package, so this works from a bare checkout. Each implementation vendors this repository as a submodule, at whatever path is idiomatic for its language and fits its layout, so nothing here assumes one.
 
 | flag | |
 |---|---|
@@ -63,7 +63,7 @@ python3 -m hbt.conformance --binary path/to/hbt 'html/*'
 
 ### From an implementation's flake
 
-An implementation takes this flake as a path input on its corpus submodule, so the submodule stays the one pin. Relative path inputs lock relative to their parent rather than by hash, so a submodule bump needs no relock:
+An implementation takes this flake as a path input on its corpus submodule, so the submodule stays the one pin. hbt-rs keeps it at `test-data/`, which the example uses. Relative path inputs lock relative to their parent rather than by hash, so a submodule bump needs no relock:
 
 ```nix
 inputs.hbt-data = {
