@@ -86,6 +86,8 @@ devShells.default = pkgs.mkShell { packages = [ hbt-data.packages.${system}.pyth
 
 The check runs the packaged harness against a copy of just the fixtures. That copy has no `.git`, so its header reports the corpus revision as `unknown`. `packages.python` is a Python carrying the harness and its dependencies, so `python3 -m hbt.conformance` works in a dev shell without the implementation naming Click or PyYAML.
 
+A `github:` reference to an implementation carries no submodules, so this input is missing from it. `nix build github:henrytill/hbt-go` still works, since nothing it builds reads the input, but `nix develop` and `nix flake check` fail with `…/testdata/flake.nix does not exist`. They need a reference that includes submodules, such as `git+https://github.com/henrytill/hbt-go?submodules=1`, or a checkout.
+
 ### From an implementation's CI
 
 For a CI job without Nix, `.github/actions/conformance` sets up a Python with `actions/setup-python`, installs Click and PyYAML with pip, and runs the harness from the corpus checkout. An implementation reaches it through its corpus submodule, so the gitlink that pins the harness and the fixtures pins the action too, and CI has to check out with submodules:
