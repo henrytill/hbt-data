@@ -45,7 +45,8 @@ jobs:
         with:
           persist-credentials: false
       # The action as an implementation calls it, against tests/hbt-stub: with
-      # the waiver it conforms, and without it the step has to fail.
+      # the waiver it conforms, and without it the harness has to report a
+      # nonconforming run, not merely fail to start.
       - uses: ./.github/actions/conformance
         with:
           binary: tests/hbt-stub
@@ -55,7 +56,7 @@ jobs:
         continue-on-error: true
         with:
           binary: tests/hbt-stub
-      - if: steps.unwaived.outcome != 'failure'
+      - if: steps.unwaived.outputs.status != '1'
         run: exit 1
 
   lint:

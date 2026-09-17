@@ -13,6 +13,13 @@ inputs:
   tz:
     description: A timezone to force instead of the runner's own.
 
+outputs:
+  status:
+    description: >-
+      The harness's exit status: 0 if the run conformed, 1 if it did not, 2 if
+      it could not run.
+    value: ${{ steps.harness.outputs.status }}
+
 runs:
   using: composite
   steps:
@@ -30,7 +37,8 @@ runs:
     # The package is imported from the corpus checkout, which is also where it
     # finds the fixtures, so the step runs from the workspace and paths are
     # the caller's own.
-    - shell: bash
+    - id: harness
+      shell: bash
       env:
         PYTHON: ${{ steps.python.outputs.python-path }}
         PYTHONPATH: ${{ github.action_path }}/../../..
@@ -41,4 +49,7 @@ runs:
         args=(--binary "$BINARY")
         if [[ -n $WAIVERS ]]; then args+=(--waivers "$WAIVERS"); fi
         if [[ -n $ZONE ]]; then args+=(--tz "$ZONE"); fi
-        "$PYTHON" -m hbt.conformance "${args[@]}"
+        status=0
+        "$PYTHON" -m hbt.conformance "${args[@]}" || status=$?
+        echo "status=$status" >>"$GITHUB_OUTPUT"
+        exit "$status"
