@@ -35,6 +35,30 @@ jobs:
       # from their own flakes.
       - run: nix build -L .#hbt-conformance --no-link
 
+  action:
+    name: Conformance action (stub hbt)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The action as an implementation calls it, against the stub that fails
+      # markdown/basic: with the waiver the run conforms, and without it the
+      # step has to fail, or the action is not reporting the harness's verdict.
+      - uses: ./.github/actions/conformance
+        with:
+          binary: tests/hbt-stub
+          waivers: tests/stub.waivers
+      - id: unwaived
+        uses: ./.github/actions/conformance
+        continue-on-error: true
+        with:
+          binary: tests/hbt-stub
+      - if: steps.unwaived.outcome != 'failure'
+        run: exit 1
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
