@@ -1,0 +1,6 @@
+#!/bin/sh
+# Stands in for hbt, which this repository does not have: answers
+# `hbt -t FORMAT INPUT` with the fixture's own expectation, except for
+# markdown/basic, which it fails so that tests/stub.waivers has to arrive.
+case "$3" in */markdown/basic.input.md) exit 1 ;; esac
+cat "${3%.input.*}.expected.$2"
