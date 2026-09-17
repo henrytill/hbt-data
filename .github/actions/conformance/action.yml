@@ -24,17 +24,17 @@ runs:
     # Ubuntu runners only, which is what all four implementations use.
     - shell: bash
       run: sudo apt-get update && sudo apt-get install -y --no-install-recommends python3-click python3-yaml
-    # Paths resolve against the workspace before changing into the corpus,
-    # which is where `python3 -m hbt.conformance` finds both the package and
-    # the fixtures.
+    # The package is imported from the corpus checkout, which is also where it
+    # finds the fixtures, so the step runs from the workspace and paths are
+    # the caller's own.
     - shell: bash
       env:
+        PYTHONPATH: ${{ github.action_path }}/../../..
         BINARY: ${{ inputs.binary }}
         WAIVERS: ${{ inputs.waivers }}
         ZONE: ${{ inputs.tz }}
       run: |
-        args=(--binary "$(realpath -e -- "$BINARY")")
-        if [[ -n $WAIVERS ]]; then args+=(--waivers "$(realpath -e -- "$WAIVERS")"); fi
+        args=(--binary "$BINARY")
+        if [[ -n $WAIVERS ]]; then args+=(--waivers "$WAIVERS"); fi
         if [[ -n $ZONE ]]; then args+=(--tz "$ZONE"); fi
-        cd -- "$GITHUB_ACTION_PATH/../../.."
         python3 -m hbt.conformance "${args[@]}"
