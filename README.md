@@ -88,7 +88,7 @@ The check runs the packaged harness against a copy of just the fixtures. That co
 
 ### From an implementation's CI
 
-For a CI job without Nix, `.github/actions/conformance` installs Click and PyYAML from apt and runs the harness from the corpus. An implementation reaches it through its corpus submodule, so the gitlink that pins the harness and the fixtures pins the action too, and CI has to check out with submodules:
+For a CI job without Nix, `.github/actions/conformance` sets up a Python with `actions/setup-python`, installs Click and PyYAML with pip, and runs the harness from the corpus checkout. An implementation reaches it through its corpus submodule, so the gitlink that pins the harness and the fixtures pins the action too, and CI has to check out with submodules:
 
 ```yaml
 - uses: actions/checkout@…
@@ -102,7 +102,7 @@ For a CI job without Nix, `.github/actions/conformance` installs Click and PyYAM
     # tz: America/New_York          # optional
 ```
 
-`binary` and `waivers` are resolved against the workspace. The action needs a Debian or Ubuntu runner, for apt.
+`binary` and `waivers` are resolved against the workspace. The action's Python is kept off the job's `PATH`, so later steps are unaffected by it.
 
 ### Timezones
 

@@ -16,15 +16,23 @@ inputs:
 runs:
   using: composite
   steps:
-    # The harness's two dependencies, from the runner's Python. Debian and
-    # Ubuntu runners only, which is what all four implementations use.
+    # A Python of the action's own, left off the caller's PATH, so the job's
+    # other steps see the environment they would without this action.
+    - id: python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: "3.14"
+        update-environment: false
     - shell: bash
-      run: sudo apt-get update && sudo apt-get install -y --no-install-recommends python3-click python3-yaml
+      env:
+        PYTHON: ${{ steps.python.outputs.python-path }}
+      run: '"$PYTHON" -m pip install click pyyaml'
     # The package is imported from the corpus checkout, which is also where it
     # finds the fixtures, so the step runs from the workspace and paths are
     # the caller's own.
     - shell: bash
       env:
+        PYTHON: ${{ steps.python.outputs.python-path }}
         PYTHONPATH: ${{ github.action_path }}/../../..
         BINARY: ${{ inputs.binary }}
         WAIVERS: ${{ inputs.waivers }}
@@ -33,4 +41,4 @@ runs:
         args=(--binary "$BINARY")
         if [[ -n $WAIVERS ]]; then args+=(--waivers "$WAIVERS"); fi
         if [[ -n $ZONE ]]; then args+=(--tz "$ZONE"); fi
-        python3 -m hbt.conformance "${args[@]}"
+        "$PYTHON" -m hbt.conformance "${args[@]}"
