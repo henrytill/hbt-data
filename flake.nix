@@ -113,19 +113,13 @@
 
         lib.check = check;
 
-        # The check is exercised here before any implementation calls it.
-        # There is no hbt in this repository, so a stub stands in that answers
-        # every fixture with its own expectation, except the one the waiver
-        # file names: the run conforms only if that file reaches the sandbox.
-        # The waivers are a path literal, the way an implementation passes
-        # them, because a path is what fails to be copied if it is stringified
-        # rather than interpolated.
+        # The check is exercised here before any implementation calls it,
+        # against tests/hbt-stub: the run conforms only if the waiver file
+        # reaches the sandbox. Both are path literals, the way an
+        # implementation passes them, because a path is what fails to be
+        # copied if it is stringified rather than interpolated.
         checks.conformance = check {
-          binary = pkgs.writeShellScript "hbt-stub" ''
-            # hbt -t FORMAT INPUT
-            case "$3" in */markdown/basic.input.md) exit 1 ;; esac
-            cat "''${3%.input.*}.expected.$2"
-          '';
+          binary = ./tests/hbt-stub;
           waivers = ./tests/stub.waivers;
         };
 
