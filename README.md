@@ -161,6 +161,16 @@ black hbt tests && isort hbt tests && flake8 hbt tests && mypy hbt tests && pyli
 
 The command is a thin layer over one call. To hold an implementation to the corpus from Python, `check_corpus(corpus, binary, fixtures, waivers)` returns a `Run` carrying the results, the stale waivers, `ok` and `summary()` — every rule that decides whether a run conformed, so a caller renders the verdict rather than restating how it is reached. `read_waivers` reads the waiver file format, `revision` names the corpus revision, and `Result.detail()` renders a failure's differences for a report to indent.
 
+## Normal form
+
+An entity's `updatedAt` never contains its `createdAt`. That is the one invariant the corpus states about a value rather than about a parse, and it holds everywhere an entity can come from: a parse, a merge, or a decode of a serialized collection.
+
+It follows from the merge rule #36 settled — the merged updates are every history and every creation time in the merge, minus the smallest creation time, which becomes `createdAt`. That rule is the one that keeps merging associative, and it leaves the result in normal form. Requiring construction and decoding to do the same is what makes the invariant unconditional rather than merely true after a merge: an implementation whose parse can produce `updatedAt: [createdAt]` has a value for which `mempty`, or its equivalent, is not an identity, and whose serialized form round-trips into an entity the merge rule would have rejected.
+
+`html/bookmarks_simple` pins the parse half: an anchor whose `LAST_MODIFIED` repeats its `ADD_DATE` states nothing an entity can carry, so it parses to an empty history and exports no `LAST_MODIFIED`. The corpus has no YAML input format, so the decode half is each implementation's own unit test.
+
+An update strictly *below* `createdAt` is untouched by all of this — HTML states that shape by reading `ADD_DATE` and `LAST_MODIFIED` independently, and #34 keeps it.
+
 ## Changing behavior
 
 A decision is only real once a fixture pins it. Adding or changing a case is a commit here followed by a submodule bump in each implementation.

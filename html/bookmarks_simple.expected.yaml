@@ -5,8 +5,7 @@ value:
   entity:
     uri: https://example.com/
     createdAt: 1609459200
-    updatedAt:
-    - 1609459200
+    updatedAt: []
     names:
     - Example Website
     labels:
