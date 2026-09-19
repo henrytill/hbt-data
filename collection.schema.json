@@ -28,7 +28,14 @@
       "type": "object",
       "properties": {
         "createdAt": {
-          "$ref": "#/$defs/Time"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Time"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "extended": {
           "type": "array",
@@ -94,7 +101,6 @@
       },
       "required": [
         "uri",
-        "createdAt",
         "updatedAt",
         "names",
         "labels"

@@ -171,6 +171,16 @@ It follows from the merge rule #36 settled — the merged updates are every hist
 
 An update strictly *below* `createdAt` is untouched by all of this — HTML states that shape by reading `ADD_DATE` and `LAST_MODIFIED` independently, and #34 keeps it.
 
+## An absent creation time
+
+`ADD_DATE` is optional, so a bookmark can arrive with no creation time at all, and **an absent one contributes nothing**. An undated mention says nothing about when the bookmark was created, so it neither claims the creation time nor pushes a real one into the update history: merged with a dated mention, the dated instant wins outright and the history stays empty. Two undated mentions stay undated. That is #37, and it is the reading the merge rule already implied — absence is the identity of that merge, not a very old instant.
+
+**Absence has a wire representation.** `createdAt` is omitted when there is none, as `shared` and `lastVisitedAt` already are, and it is not in the schema's `required` list. Without that the rule would not survive a round-trip: an undated entity would serialize as `createdAt: 0` and decode back as one created on 1970-01-01, so the same collection would merge differently depending on whether it had passed through YAML — a serialization-only divergence of exactly the kind this corpus exists to catch.
+
+A creation time of `0` is a real instant and is not absence. `html/bookmarks_epoch_creation` pins the difference: it keeps `createdAt: 0` and exports `ADD_DATE="0"`, where `html/bookmarks_undated` carries neither. An implementation that tests truthiness rather than presence collapses the two.
+
+`html/bookmarks_undated` and `html/bookmarks_undated_merged` state the two halves. Measured when they landed: hbt-hs fails only the first, since it already merges this way and only lacked the wire form; hbt-ocaml fails both, having filled in the epoch at parse; hbt-go fails those two and `bookmarks_epoch_creation`, the last being its own #74.
+
 ## Changing behavior
 
 A decision is only real once a fixture pins it. Adding or changing a case is a commit here followed by a submodule bump in each implementation.

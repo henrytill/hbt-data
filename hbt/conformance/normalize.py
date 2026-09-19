@@ -52,7 +52,7 @@ ENTITY_TEXT_LISTS = ("names", "labels", "extended")
 ENTITY_TIME_LISTS = ("updatedAt",)
 ENTITY_TIMES = ("createdAt", "lastVisitedAt")
 ENTITY_FLAGS = ("shared", "toRead", "isFeed")
-ENTITY_REQUIRED = ("uri", "createdAt")
+ENTITY_REQUIRED = ("uri",)
 # The membership of these tuples restates collection.schema.json's property
 # lists; the partition by normalization behavior is this module's own.  A test
 # holds the membership to the schema, so a field added upstream shows up as one
@@ -174,16 +174,19 @@ def _entity(value: object, path: str) -> dict[str, Any]:
         if raw.get(field) is None:
             raise NormalizationError(f"{path}.{field}", "required field is missing")
 
-    out: dict[str, Any] = {
-        "uri": _string(raw["uri"], f"{path}.uri"),
-        "createdAt": _time(raw["createdAt"], f"{path}.createdAt"),
-    }
+    out: dict[str, Any] = {"uri": _string(raw["uri"], f"{path}.uri")}
     for field in ENTITY_TIME_LISTS:
         out[field] = _set_of(raw.get(field), f"{path}.{field}", _time)
     for field in ENTITY_TEXT_LISTS:
         out[field] = _set_of(raw.get(field), f"{path}.{field}", _string)
     # Optional scalars are dropped when unset, so that absent and null land on
     # the same normalized form rather than on two forms that compare unequal.
+    # createdAt is one of them: an entity parsed from an anchor with no ADD_DATE
+    # has no creation time, and the wire omits the key rather than writing 0
+    # (#37).  A createdAt of 0 is a real instant and is kept, which is the whole
+    # point of the distinction -- `is not None` rather than a truthiness test.
+    if raw.get("createdAt") is not None:
+        out["createdAt"] = _time(raw["createdAt"], f"{path}.createdAt")
     if raw.get("lastVisitedAt") is not None:
         out["lastVisitedAt"] = _time(raw["lastVisitedAt"], f"{path}.lastVisitedAt")
     for field in ENTITY_FLAGS:
