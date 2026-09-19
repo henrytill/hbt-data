@@ -1,0 +1,14 @@
+version: 0.1.0
+length: 1
+value:
+- id: 0
+  entity:
+    uri: https://example.com/
+    createdAt: 1609459200
+    updatedAt: []
+    names:
+    - Example Website
+    labels:
+    - dated
+    - undated
+  edges: []
