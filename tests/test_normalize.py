@@ -33,6 +33,13 @@ def entity(**overrides: Any) -> dict[str, Any]:
     return base
 
 
+def undated_entity(**overrides: Any) -> dict[str, Any]:
+    """An entity with no ``createdAt`` key at all, as an undated bookmark serializes (#37)."""
+    base = entity(**overrides)
+    del base["createdAt"]
+    return base
+
+
 class GrantedEquivalences(unittest.TestCase):
     def test_scalar_quoting_is_not_a_difference(self) -> None:
         """The contract is the YAML data model, not the bytes.
@@ -48,6 +55,10 @@ class GrantedEquivalences(unittest.TestCase):
     def test_null_equals_absent_for_optional_flags(self) -> None:
         explicit = collection(entity(shared=None, toRead=None, isFeed=None))
         self.assertEqual(compare(explicit, collection(entity())), [])
+
+    def test_null_created_at_equals_absent(self) -> None:
+        """#37 gave absence a wire form, so it is granted the same equivalence as the flags."""
+        self.assertEqual(compare(collection(entity(createdAt=None)), collection(undated_entity())), [])
 
     def test_empty_list_equals_absent(self) -> None:
         self.assertEqual(compare(collection(entity(extended=[])), collection(entity())), [])
@@ -122,6 +133,24 @@ class Refusals(unittest.TestCase):
         doc["version"] = "one"
         with self.assertRaisesRegex(NormalizationError, "version"):
             normalize(doc)
+
+
+class CreatedAtZeroIsNotAbsence(unittest.TestCase):
+    """The distinction #37 bought, which the corpus cannot check on its own.
+
+    Both sides of a fixture go through this normalizer, so a truthiness test
+    here would drop ``createdAt: 0`` from expected *and* actual together and
+    html/bookmarks_epoch_creation would pass no matter what an implementation
+    emitted.  These two cases are what keep that fixture load-bearing.
+    """
+
+    def test_zero_created_at_differs_from_an_absent_one(self) -> None:
+        differences = compare(collection(entity(createdAt=0)), collection(undated_entity()))
+        self.assertNotEqual(differences, [])
+
+    def test_zero_created_at_survives_normalization(self) -> None:
+        normalized = normalize(collection(entity(createdAt=0)))
+        self.assertEqual(normalized["value"][0]["entity"]["createdAt"], 0)
 
 
 class HtmlComparison(unittest.TestCase):
