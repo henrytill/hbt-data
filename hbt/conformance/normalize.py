@@ -15,8 +15,14 @@ Three equivalences are granted, and nothing else is:
 * **Absent, ``null``, and the empty list all mean absent.**  ``collection.schema.json``
   types ``shared``, ``toRead`` and ``isFeed`` as ``[boolean, null]`` and leaves
   them out of ``required``, so an omitted key and an explicit ``null`` are both
-  the schema's way of spelling "unset".  The list-valued fields are given
-  ``default: []`` for the same reason.
+  the schema's way of spelling "unset".  ``createdAt`` and ``lastVisitedAt``
+  have the same shape and are read the same way -- an undated bookmark omits
+  its creation time rather than writing 0 (#37).  The list-valued fields are
+  given ``default: []`` for the same reason.
+
+  This is absence, not falsiness: a ``createdAt`` of 0 is a real instant and
+  is kept.  Collapsing the two is the one thing #37 exists to prevent, and no
+  fixture can catch it, since expected and actual are normalized alike.
 * **Scalar quoting does not matter**, because YAML says so.
 * **Nothing else.**  In particular a quoted timestamp is a failure, not a
   formatting quirk, and a field the schema does not define is a failure rather
