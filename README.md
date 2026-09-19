@@ -177,9 +177,9 @@ An update strictly *below* `createdAt` is untouched by all of this — HTML stat
 
 **Absence has a wire representation.** `createdAt` is omitted when there is none, as `shared` and `lastVisitedAt` already are, and it is not in the schema's `required` list. Without that the rule would not survive a round-trip: an undated entity would serialize as `createdAt: 0` and decode back as one created on 1970-01-01, so the same collection would merge differently depending on whether it had passed through YAML — a serialization-only divergence of exactly the kind this corpus exists to catch.
 
-A creation time of `0` is a real instant and is not absence. `html/bookmarks_epoch_creation` pins the difference: it keeps `createdAt: 0` and exports `ADD_DATE="0"`, where `html/bookmarks_undated` carries neither. An implementation that tests truthiness rather than presence collapses the two.
+A creation time of `0` is a real instant and is not absence. `html/bookmarks_epoch_creation` pins the difference: it keeps `createdAt: 0` and exports `ADD_DATE="0"`, where `html/bookmarks_undated` carries neither. An implementation that tests truthiness rather than presence collapses the two — which is what hbt-rs#63 and hbt-go#74 each do in their formatter, a guess that was defensible while absence had no representation and is not now.
 
-`html/bookmarks_undated` and `html/bookmarks_undated_merged` state the two halves. Measured when they landed: hbt-hs fails only the first, since it already merges this way and only lacked the wire form; hbt-ocaml fails both, having filled in the epoch at parse; hbt-go fails those two and `bookmarks_epoch_creation`, the last being its own #74.
+`html/bookmarks_undated` states what a single undated anchor becomes, `html/bookmarks_undated_merged` what an undated mention merged with a dated one becomes, and `html/bookmarks_undated_both` that two undated mentions stay undated — the identity half, which an implementation could otherwise fail by substituting an epoch when neither operand has a time.
 
 ## Changing behavior
 
