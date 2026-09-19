@@ -181,14 +181,18 @@ def _entity(value: object, path: str) -> dict[str, Any]:
         out[field] = _set_of(raw.get(field), f"{path}.{field}", _string)
     # Optional scalars are dropped when unset, so that absent and null land on
     # the same normalized form rather than on two forms that compare unequal.
-    # createdAt is one of them: an entity parsed from an anchor with no ADD_DATE
-    # has no creation time, and the wire omits the key rather than writing 0
-    # (#37).  A createdAt of 0 is a real instant and is kept, which is the whole
-    # point of the distinction -- `is not None` rather than a truthiness test.
-    if raw.get("createdAt") is not None:
-        out["createdAt"] = _time(raw["createdAt"], f"{path}.createdAt")
-    if raw.get("lastVisitedAt") is not None:
-        out["lastVisitedAt"] = _time(raw["lastVisitedAt"], f"{path}.lastVisitedAt")
+    # createdAt is one of them since #37: an entity parsed from an anchor with
+    # no ADD_DATE has no creation time, and the wire omits the key rather than
+    # writing 0.
+    #
+    # ``is not None``, never a truthiness test: a createdAt of 0 is a real
+    # instant, and collapsing it into absence is exactly what #37 separated.
+    # Looping over ENTITY_TIMES rather than restating the body per field is
+    # what keeps a third optional time from being accepted as a known key and
+    # then never compared -- which would read as a PASS.
+    for field in ENTITY_TIMES:
+        if raw.get(field) is not None:
+            out[field] = _time(raw[field], f"{path}.{field}")
     for field in ENTITY_FLAGS:
         flag = _flag(raw.get(field), f"{path}.{field}")
         if flag is not None:
