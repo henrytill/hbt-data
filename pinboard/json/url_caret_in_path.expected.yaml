@@ -1,0 +1,15 @@
+version: 0.1.0
+length: 1
+value:
+- id: 0
+  entity:
+    uri: https://example.com/a%5Eb
+    createdAt: 1704067200
+    updatedAt: []
+    names: []
+    labels:
+    - caret
+    shared: false
+    toRead: false
+    isFeed: false
+  edges: []

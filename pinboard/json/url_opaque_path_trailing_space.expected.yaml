@@ -1,0 +1,15 @@
+version: 0.1.0
+length: 1
+value:
+- id: 0
+  entity:
+    uri: foo:a b%20?q
+    createdAt: 1704067200
+    updatedAt: []
+    names: []
+    labels:
+    - space
+    shared: false
+    toRead: false
+    isFeed: false
+  edges: []
