@@ -183,17 +183,13 @@ A creation time of `0` is a real instant and is not absence. `html/bookmarks_epo
 
 ## URLs are the WHATWG URL Standard's
 
-A URL is the collection's key, so its normalized form is part of the contract: two implementations that normalize one `href` differently build different collections from the same file. **The form is the current [URL Standard](https://url.spec.whatwg.org/)'s** — what its URL parser and serializer give, as browsers, node and the reference implementation whatwg-url produce it.
+A URL is the collection's key, so its normalized form is part of the contract: two implementations that normalize one `href` differently build different collections from the same file. **The form is the current [URL Standard](https://url.spec.whatwg.org/)'s** — what its URL parser and serializer give, as the reference implementation whatwg-url produces it.
 
-Where Rust's `url` crate (2.5.8), and so hbt-rs, still follows an older revision of the standard, the corpus pins the newer form, one fixture per edge so that each can be waived on its own:
+The corpus pins the edges where the standard has changed and a parser following an older revision gives a different key, one fixture per edge so that each can be waived on its own:
 
-| fixture | input | expected |
-|---|---|---|
-| `pinboard/json/url_caret_in_path` | `https://example.com/a^b` | `https://example.com/a%5Eb` — `^` joined the path percent-encode set |
-| `pinboard/json/url_opaque_path_trailing_space` | `foo:a b ?q` | `foo:a b%20?q` — a space ending an opaque path is encoded when a query or fragment follows |
-| `pinboard/json/url_file_drive_letter_pipe` | `file:///C\|/x` | `file:///C:/x` — a `\|` drive letter is normalized to `:` |
-
-hbt-js parses with whatwg-url's parser on every platform for this reason: the platforms' own `URL` classes disagree with each other, Chromium's most of all.
+- `pinboard/json/url_caret_in_path` — `^` joined the path percent-encode set.
+- `pinboard/json/url_opaque_path_trailing_space` — a space ending an opaque path is encoded when a query or fragment follows.
+- `pinboard/json/url_file_drive_letter_pipe` — a `|` Windows drive letter in a `file:` URL is normalized to `:`.
 
 ## Changing behavior
 
