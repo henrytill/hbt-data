@@ -31,7 +31,7 @@ PASS  pinboard/xml/sample     .input.xml   .expected.yaml
 
 The header carries only what the table cannot: the corpus revision, because a stale pin otherwise surfaces as dozens of opaque failures; the binary, which is what tells two runs apart in a CI log; and the share of the corpus that ran, so a filtered run says what it filtered from. `TZ` appears only when `--tz` forced one. Coverage is not restated — every row names its category and lists the expectations it was held to. Every fixture is then listed, passes included, the way the four suites this replaces all did. `-q` prints only what did not pass.
 
-The columns are outcome, name, input, expectations and reason, padded to the widest row printed. The name is the fixture's own, the files beside it are the suffixes it carries — the HTML fixtures pin two expectations, the other twenty-eight pin one — and the reason comes last because it is the only field holding spaces. The expectations are comma-joined without one, so every row has the same field count and the second column is a name that can be fed straight back in:
+The columns are outcome, name, input, expectations and reason, padded to the widest row printed. The name is the fixture's own, the files beside it are the suffixes it carries — the HTML fixtures pin two expectations, the other thirty-one pin one — and the reason comes last because it is the only field holding spaces. The expectations are comma-joined without one, so every row has the same field count and the second column is a name that can be fed straight back in:
 
 ```sh
 hbt-conformance --binary path/to/hbt | awk '$1 == "FAIL" {print $2}'          # rerun these
